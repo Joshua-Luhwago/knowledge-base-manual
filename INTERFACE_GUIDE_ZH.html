@@ -1,10 +1,10 @@
 <!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="robots" content="noindex"><title>多模态知识库——操作手册</title><style>
 @page {size:A4;margin:16mm 14mm 18mm}*{box-sizing:border-box}body{font:10pt/1.55 'Noto Sans CJK SC','Noto Sans',sans-serif;color:#182735;margin:0 auto;max-width:1000px;padding:28px}h1{font-size:26pt;line-height:1.3;color:#103e57;border-bottom:4px solid #1b8e9a;padding-bottom:16px}h2{font-size:17pt;color:#103e57;margin-top:32px;border-bottom:1px solid #c9dce2;padding-bottom:8px}h3{font-size:12pt;color:#175b70}p{margin:10px 0}a{color:#08788c;text-decoration:none;overflow-wrap:anywhere}code{font:8.5pt/1.4 'Noto Sans Mono CJK SC',monospace;overflow-wrap:anywhere}pre{background:#f0f5f8;border-left:3px solid #20909d;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:8pt;table-layout:auto;margin:16px 0}th{background:#dcecf1;text-align:left;color:#113f55}td,th{padding:6px;border:1px solid #cbdbe2;vertical-align:top;overflow-wrap:anywhere}tr:nth-child(even){background:#f5f8fa}figure{margin:18px 0 24px;break-inside:avoid}figure img{display:block;width:100%;height:auto;border:1px solid #c9dce2;border-radius:4px}figcaption{font-size:8.5pt;color:#566a78;margin-top:6px}img{max-width:100%}li{margin:4px 0}thead{display:table-header-group}tr{break-inside:avoid}h1,h2,h3{break-after:avoid} @media print{body{padding:0;max-width:none}h2{break-before:page;margin-top:0}a{color:#11677a}figure img{max-height:145mm;object-fit:contain}pre{break-inside:avoid}}
 </style><body><h1>多模态知识库——功能演示与操作手册</h1>
-<p><strong>中文版 · 2026 年 11 月 2 日 · 本地仓库版本快照</strong></p>
+<p><strong>中文版 · 2026 年 11 月 3 日 · 本地仓库版本快照</strong></p>
 <p>本手册沿用参考文档的图文操作形式，补充已实际完成的流程、浏览器录屏、接口目录及可复现输入。按钮名称与中文界面保持一致。</p>
-<p><strong>证据范围：</strong> 截图与录屏均来自本仓库，前端演示地址为 <code>http://127.0.0.1:5175</code>，Flask 使用 <code>5002</code> 端口。未将另一份 Agent-System 中 <code>5174/5001</code> 的副本用作本次演示。启动时设置 <code>DISABLE_KB_BOOTSTRAP=1</code>，避免自动重建已有索引。初始清点为 123 份可见文件；已有索引摘要记录 138 份文档、5,719 个文本块。两者统计口径不同，不能视为同一数量。演示上传会改变可见文件数量。</p>
-<p>已截图操作和源码核实功能的置信度为<strong>高</strong>；服务不可用时，其成功执行状态为<strong>未验证</strong>。所有演示测量值均为合成数据。</p>
+<p><strong>证据范围：</strong> 更新后的截图和界面全览录屏来自本仓库：前端位于 <code>http://127.0.0.1:5175</code>，Flask 使用 <code>5003</code> 端口，独立的 Neo4j 演示数据库使用 Bolt <code>7688</code> 端口。其他录屏使用同一仓库及 <code>5002</code> 端口。设置 <code>DISABLE_KB_BOOTSTRAP=1</code> 以避免自动重建向量索引。已有索引摘要记录 138 份文档、5,719 个文本块；演示上传后可见文件数可能不同。</p>
+<p>已截图操作和源码核实功能的置信度为<strong>高</strong>；依赖 InfluxDB 的操作仍未验证。所有演示测量值均为合成数据。</p>
 <h2>目录</h2>
 <ol>
 <li>启动与工作流程</li>
@@ -197,8 +197,8 @@ npm run dev
 <h2>8. 知识图谱</h2>
 <p>打开<strong>知识图谱</strong>，在<strong>统一检索</strong>输入设备、指标、故障或标准，点击<strong>搜索</strong>或回车。页面请求局部图谱与证据链；建议项和主题标签用于定位实体。选中节点后可检查或聚焦，支持拖动、缩放及 <strong>+</strong>、<strong>−</strong>、<strong>适配</strong>。<strong>刷新图谱</strong>重新加载；<strong>图谱大屏展示/回到总览</strong>重置筛选。</p>
 <p>工作区显示节点数、关系数、类型化节点数、缩放比例、搜索结果及证据链摘要。后端实体接口支持名称、类型和数量限制；证据链接口支持种子数量、链路数量以及一跳或两跳。类型化抽取包括 <code>StandardClause</code>、<code>FaultMode</code>、<code>InspectionTask</code>、<code>MaintenanceAction</code>、<code>ThresholdRule</code>，并建立证据、故障、检查与措施之间的关系。</p>
-<p><strong>录制时的问题与解决方式：</strong> 当时 7687 端口没有可用的 Bolt 服务，<code>/api/graph/overview</code> 返回 HTTP 503。本机启动已有容器 <code>neo4j-start-local-neo4j-1</code>，并在本项目 <code>.env</code> 中设置实际可用的 <code>NEO4J_URI</code>、<code>NEO4J_USER</code>、<code>NEO4J_PASSWORD</code> 后，连接已恢复；该接口现返回 HTTP 200。修改 <code>.env</code> 后需重启 Flask。其他机器需启动开放 7687 端口的 Neo4j 并填写实际凭据。如需填充或重建图谱，先备份已有 Neo4j 数据库；<code>POST /api/graph/rebuild</code> 会使用已有向量文本块进行清理后重建。通过 <code>GET /api/kb/build/&lt;task_id&gt;</code> 查看任务结果，再重新搜索。截图保留录制时状态。</p>
-<figure><img src="screenshots/11-graph.png" alt="图谱工作区与真实 Neo4j 状态"><figcaption>图谱工作区与真实 Neo4j 状态</figcaption></figure>
+<p><strong>图谱配置与结果：</strong> 为运行中的 Neo4j 设置 <code>NEO4J_URI</code>、<code>NEO4J_USER</code>、<code>NEO4J_PASSWORD</code>，然后重启 Flask。图谱演示使用独立数据库，通过 <code>KG_EXTRACT_MODE=rule</code> 和 <code>POST /api/graph/rebuild</code> 从已有向量文本块构建。清理重建前应先备份已有数据库，并通过 <code>GET /api/kb/build/&lt;task_id&gt;</code> 查看进度。本次录制中，<code>/api/graph/overview</code> 返回 HTTP 200，图谱搜索得到有节点和关系的网络及证据链。</p>
+<figure><img src="screenshots/11-graph.png" alt="包含节点和关系的图谱工作区"><figcaption>包含节点和关系的图谱工作区</figcaption></figure>
 <figure><img src="screenshots/12-graph-search.png" alt="关键词检索与证据链区域"><figcaption>关键词检索与证据链区域</figcaption></figure>
 <h2>9. 带证据的知识问答</h2>
 <p>打开<strong>知识问答</strong>，选择推荐类别、示例问题或自行输入。<strong>Enter</strong>发送，<strong>Ctrl+Enter</strong>换行，执行期间发送按钮禁用。<strong>新建对话</strong>开启新会话；点击历史条目重新打开已有回答，历史项上下文菜单支持删除记录。</p>
@@ -213,19 +213,19 @@ npm run dev
 <p>结构化字段包括设备 ID、名称、类型、站点、部件、型号、电压等级，异常现象和每行一项的症状/信号，以及测点 ID、名称、指标键、数值、单位、时间和来源。通过**+ 添加测量<strong>增加条目，通过</strong>移除<strong>删除多余测量。可输入注意、预警、告警值，并选择</strong>数值越高越危险<strong>或</strong>数值越低越危险**。历史序列每行填写 <code>timestamp,value</code>。高级配置提供案例 ID、检索 <code>top_k</code> 和调试输出。</p>
 <p><strong>复现已完成演示：</strong> 点击<strong>加载示例</strong>，检查两项测量，然后<strong>运行诊断</strong>。内置示例使用混合输入：顶层油温 95°C（阈值 85/90/95），负载率 87%（阈值 80/85/95）。实际结果分别为 <strong>alarm</strong>、<strong>warning</strong>，综合风险为 <strong>Critical</strong>，并生成持久化报告。</p>
 <p>结果包含异常摘要、故障候选、检查建议、处置措施、适用性、矛盾、缺失证据及规则命中。上限/下限方向决定比较方式；缺失阈值不等于正常。有证据补全阈值或阈值差异时会显示相应内容。</p>
-<p><strong>本次结果含义：</strong> 向量证据数与图谱候选数均为零。过热候选和检查建议来自确定性回退或标准主题提示，结果中明确标注。85/90/95 是示例输入，不是本次检索得到的标准限值。本次未对真实设备做诊断。</p>
+<p><strong>本次结果含义：</strong> 合成示例没有返回向量文本摘录（<code>evidence_count=0</code>），图谱提供 18 个 typed 候选。保存的报告包含两条输入观测和 21 条图谱支持项。85/90/95 是示例输入，并非新检索得到的标准限值；候选建议不是已确认的诊断结论。</p>
 <figure><img src="screenshots/36-natural-language.png" alt="自然语言输入"><figcaption>自然语言输入</figcaption></figure>
 <figure><img src="screenshots/37-structured.png" alt="结构化异常表单"><figcaption>结构化异常表单</figcaption></figure>
 <figure><img src="screenshots/16-diagnosis-example.png" alt="已加载的混合输入示例"><figcaption>已加载的混合输入示例</figcaption></figure>
 <figure><img src="screenshots/17-diagnosis-result.png" alt="实际完成的诊断与报告链接"><figcaption>实际完成的诊断与报告链接</figcaption></figure>
 <h2>11. 持久化报告与来源证据</h2>
-<p>运行成功后点击<strong>查看完整报告</strong>。报告路由必须使用真实 ID；本次生成 <code>rpt-1793633495-f5c289a2</code>。页面展示输入事实、归一化测量、阈值和规则、故障候选、检查与措施，以及支持证据和技术细节。展开<strong>四、附加追踪与技术细节</strong>可查看流水线和证据补全记录。需向下滚动阅读完整报告，截图展示开头及下方内容。</p>
+<p>运行成功后点击<strong>查看完整报告</strong>。报告路由必须使用真实 ID；本次生成 <code>rpt-1793660006-ff7678fb</code>。页面展示输入事实、归一化测量、阈值和规则、故障候选、检查与措施，以及支持证据和技术细节。展开<strong>四、附加追踪与技术细节</strong>可查看流水线和证据补全记录。需向下滚动阅读完整报告，截图展示开头及下方内容。</p>
 <p>报告以 JSON 持久化在 <code>uploads/reports/</code>。使用 <code>GET /api/reports</code> 列表查询，<code>GET /api/reports/&lt;report_id&gt;</code> 读取，或在运行记录仍可用时使用 <code>POST /api/reports/from-run/&lt;run_id&gt;</code> 重建报告。运行记录保存在进程内存中，报告文件可跨重启保留；请保存报告 ID。</p>
-<p>证据按钮打开已解析的 PDF 引用或数据集文档。<code>/api/references/pdf/&lt;token&gt;</code> 解析已注册来源，需要真实 token。本次两项支持证据是 SCADA/EMS 输入观测，不是检索文档片段，未宣称该次诊断成功生成可访问的来源 PDF 引用。</p>
+<p>存在来源元数据时，证据按钮可打开已解析的 PDF 引用或数据集文档；<code>/api/references/pdf/&lt;token&gt;</code> 需要已注册 token。本次报告列出两条 SCADA/EMS 输入观测和 21 条 typed 图谱支持项。</p>
 <p>当前报告页面没有专门的 PDF 导出按钮。本手册附带的中英文 PDF 是文档构建产物；需要打印诊断报告时可另用浏览器打印。</p>
 <figure><img src="screenshots/18-report.png" alt="报告标题与测量事实"><figcaption>报告标题与测量事实</figcaption></figure>
 <figure><img src="screenshots/19-report-evidence.png" alt="规则推演与建议"><figcaption>规则推演与建议</figcaption></figure>
-<figure><img src="screenshots/38-report-bottom.png" alt="输入观测证据面板"><figcaption>输入观测证据面板</figcaption></figure>
+<figure><img src="screenshots/38-report-bottom.png" alt="支持证据面板"><figcaption>支持证据面板</figcaption></figure>
 <figure><img src="screenshots/49-report-reasoning.png" alt="故障候选与处置建议"><figcaption>故障候选与处置建议</figcaption></figure>
 <figure><img src="screenshots/50-report-pipeline.png" alt="展开的技术细节与流水线阶段"><figcaption>展开的技术细节与流水线阶段</figcaption></figure>
 <h2>12. 设备状态监测</h2>
@@ -746,8 +746,8 @@ venv/bin/python scripts/eval_kg_extraction.py
 <td>Vite 使用 <code>strictPort</code>；停止冲突服务或明确使用其他端口并匹配后端。</td>
 </tr>
 <tr>
-<td>图谱返回 503</td>
-<td>启动 7687 端口的 Neo4j，在 <code>.env</code> 中设置实际 URI/用户名/密码并重启 Flask；本机已有容器恢复接口 HTTP 200，需重建图谱内容时使用 <code>/api/graph/rebuild</code>。</td>
+<td>图谱搜索无结果</td>
+<td>检查 Neo4j URI 和凭据；备份数据库后使用 <code>/api/graph/rebuild</code> 从已有文本块构建图谱内容。</td>
 </tr>
 <tr>
 <td>监测连接 8086 失败</td>
