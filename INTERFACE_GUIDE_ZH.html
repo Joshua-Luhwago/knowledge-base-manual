@@ -192,18 +192,18 @@ npm run dev
 <li><code>POST /api/vector/search</code>：提供 <code>query</code>，可选 <code>top_k</code>（1–100）、<code>category</code>、<code>doc_id</code>；返回分数、文本及可用页码、条款和行号。</li>
 </ul>
 <p>检索读取 FAISS 内积索引，对问题向量化，召回候选，再按文档、分类过滤并排除已删除资料。维度不匹配时返回 HTTP 409 并触发重建任务。索引缺失或嵌入模型不可用时，需先解决相应问题。</p>
-<p><strong>实际结果：</strong> overview/docs 返回 HTTP 200。已有摘要记录 1,024 维 <code>voyage-4-large</code> 索引；当前配置走本地问题嵌入，但缓存模型缺失，导致新问答检索失败。维度相同也不能证明模型兼容，索引和查询应使用同一嵌入模型。</p>
+<p><strong>录制时的问题：</strong> overview/docs 返回 HTTP 200，但已有 1,024 维索引由 <code>voyage-4-large</code> 构建，默认本地路径却尝试从 Hugging Face 缓存加载这一 API 模型，导致新问答检索失败。针对该 Voyage 4 索引，可设置 <code>EMBEDDING_QUERY_MODEL=voyageai/voyage-4-nano</code>，本地 Nano 产生兼容的 1,024 维查询向量，无需重建索引。首次下载设置 <code>LOCAL_EMBEDDING_LOCAL_ONLY=0</code>，离线运行再改为 <code>1</code>；生成回答还需可用的语言模型。</p>
 <p>维护接口包括 <code>POST /api/kb/build</code>（综合构建）、<code>/api/vector/rebuild</code>（仅向量）、<code>/api/graph/rebuild</code>（仅图谱）。使用 <code>GET /api/kb/build/&lt;task_id&gt;</code> 查询阶段、日志和结果。返回任务 ID 只表示已接受，不表示完成。本次未主动重建已有索引。</p>
 <h2>8. 知识图谱</h2>
 <p>打开<strong>知识图谱</strong>，在<strong>统一检索</strong>输入设备、指标、故障或标准，点击<strong>搜索</strong>或回车。页面请求局部图谱与证据链；建议项和主题标签用于定位实体。选中节点后可检查或聚焦，支持拖动、缩放及 <strong>+</strong>、<strong>−</strong>、<strong>适配</strong>。<strong>刷新图谱</strong>重新加载；<strong>图谱大屏展示/回到总览</strong>重置筛选。</p>
 <p>工作区显示节点数、关系数、类型化节点数、缩放比例、搜索结果及证据链摘要。后端实体接口支持名称、类型和数量限制；证据链接口支持种子数量、链路数量以及一跳或两跳。类型化抽取包括 <code>StandardClause</code>、<code>FaultMode</code>、<code>InspectionTask</code>、<code>MaintenanceAction</code>、<code>ThresholdRule</code>，并建立证据、故障、检查与措施之间的关系。</p>
-<p><strong>实际结果：</strong> 7687 端口的 Neo4j 不可用，<code>/api/graph/overview</code> 返回 HTTP 503。检索<strong>油温</strong>后保留真实的不可用与空结果状态。本次未演示有数据的网络、节点选中及成功图谱扩展。配置 Neo4j 并加载图谱后，可按上述步骤执行。</p>
+<p><strong>录制时的问题与解决方式：</strong> 当时 7687 端口没有可用的 Bolt 服务，<code>/api/graph/overview</code> 返回 HTTP 503。本机启动已有容器 <code>neo4j-start-local-neo4j-1</code>，并在本项目 <code>.env</code> 中设置实际可用的 <code>NEO4J_URI</code>、<code>NEO4J_USER</code>、<code>NEO4J_PASSWORD</code> 后，连接已恢复；该接口现返回 HTTP 200。修改 <code>.env</code> 后需重启 Flask。其他机器需启动开放 7687 端口的 Neo4j 并填写实际凭据。如需填充或重建图谱，先备份已有 Neo4j 数据库；<code>POST /api/graph/rebuild</code> 会使用已有向量文本块进行清理后重建。通过 <code>GET /api/kb/build/&lt;task_id&gt;</code> 查看任务结果，再重新搜索。截图保留录制时状态。</p>
 <figure><img src="screenshots/11-graph.png" alt="图谱工作区与真实 Neo4j 状态"><figcaption>图谱工作区与真实 Neo4j 状态</figcaption></figure>
 <figure><img src="screenshots/12-graph-search.png" alt="关键词检索与证据链区域"><figcaption>关键词检索与证据链区域</figcaption></figure>
 <h2>9. 带证据的知识问答</h2>
 <p>打开<strong>知识问答</strong>，选择推荐类别、示例问题或自行输入。<strong>Enter</strong>发送，<strong>Ctrl+Enter</strong>换行，执行期间发送按钮禁用。<strong>新建对话</strong>开启新会话；点击历史条目重新打开已有回答，历史项上下文菜单支持删除记录。</p>
 <p>回答可包含行内 <strong>【1】</strong>、来源文档链接，右侧<strong>引用文本块</strong>最多展示五条证据摘录。<strong>查看文档</strong>打开相关数据集资料，<strong>复制</strong>复制文本块。可查看已有的页码、条款、章节与行号；这些是可用来源信息，并不保证每条旧记录都有可解析的 PDF 链接。</p>
-<p><strong>已演示：</strong> 提交新的油色谱问题，实际返回模型缺失错误；随后打开此前保存的过热问题回答，展示历史引用与摘录。该历史回答未重新生成，本次亦未独立复核其中的工程结论。</p>
+<p><strong>录制时的问题与处理：</strong> 新提交的油色谱问题在生成回答前失败，因为本地嵌入路径无法加载 <code>voyage-4-large</code>。本次分支加入与已有 Voyage 4 索引兼容的本地 <code>voyage-4-nano</code> 查询选项：设置 <code>EMBEDDING_QUERY_MODEL=voyageai/voyage-4-nano</code>，首次下载模型，并配置可用的回答模型（如本地 Ollama <code>qwen2.5:7b</code>）。本分支另行验证了 Nano 与本地 Ollama：新问题返回 HTTP 200，并包含八条证据文本块。录制中打开的过热问题回答为已有历史记录，没有重新生成。</p>
 <figure><img src="screenshots/13-qa.png" alt="问答工作区与历史记录"><figcaption>问答工作区与历史记录</figcaption></figure>
 <figure><img src="screenshots/14-qa-answer.png" alt="新问题实际返回的错误"><figcaption>新问题实际返回的错误</figcaption></figure>
 <figure><img src="screenshots/34-qa-history.png" alt="已有回答及行内引用"><figcaption>已有回答及行内引用</figcaption></figure>
@@ -231,7 +231,7 @@ npm run dev
 <h2>12. 设备状态监测</h2>
 <p>打开<strong>状态监测</strong>。这里的独立文件选择器将设备时序直接写入 InfluxDB。选择 Excel 工作簿并点击<strong>上传并导入时序数据</strong>。可识别的工作表名称标记为<strong>主变压器时序</strong>、<strong>GIS时序</strong>、<strong>断路器时序</strong>、<strong>主变压器运行日志</strong>。有效表需包含 <code>timestamp</code> 或 <code>log_date</code>，以及 <code>device_id</code>；manual-demo.xlsx 另含 <code>top_oil_temp_c</code>、<code>load_mw</code>。</p>
 <p>在<strong>单台设备多指标</strong>模式中选择数据类型和设备，通过指标标签控制曲线，选择<strong>归一化对比/原值对比</strong>。归一化适合比较变化形态，原值和单位应结合结果表读取。<strong>单指标多设备</strong>模式选择指标并切换设备标签。<strong>刷新</strong>重新执行当前查询，下方表格显示返回数据。</p>
-<p><strong>当前行为：</strong> 本页依赖 InfluxDB，与 Neo4j 无关。8086 端口的 InfluxDB 不可用，实际页面显示连接拒绝。本次未宣称成功写入时序或绘出有数据曲线。虽然选择器和接口接受 CSV，导入实现实际调用 <code>pandas.read_excel</code>，应使用兼容的 Excel 工作簿；旧版 <code>.xls</code> 还需要相应读取引擎。</p>
+<p><strong>录制时的问题与所需配置：</strong> 本页依赖 InfluxDB OSS v2；当时 <code>127.0.0.1:8086</code> 没有服务监听，因此显示连接拒绝。启动 InfluxDB v2，创建组织与 bucket，在 <code>.env</code> 中设置 <code>INFLUXDB_URL</code>、<code>INFLUXDB_ORG</code>、<code>INFLUXDB_BUCKET</code>、<code>INFLUXDB_TOKEN</code>，重启 Flask，并在导入示例工作簿前检查 <code>/api/timeseries/ping</code>。录制中没有成功写入时序或展示有数据的曲线。导入器实际调用 <code>pandas.read_excel</code>，因此应使用 Excel 文件；旧版 <code>.xls</code> 还需读取引擎。</p>
 <p>导入器会先删除同一 measurement 中、输入工作表日期区间至下一天的已有点，再写入新行，可能覆盖该区间其他设备的记录。本次工作簿仅导入知识库，未写入生产时序 bucket。</p>
 <figure><img src="screenshots/20-timeseries.png" alt="状态监测与实际服务错误"><figcaption>状态监测与实际服务错误</figcaption></figure>
 <figure><img src="screenshots/21-timeseries-compare.png" alt="单指标多设备模式"><figcaption>单指标多设备模式</figcaption></figure>
@@ -746,16 +746,16 @@ venv/bin/python scripts/eval_kg_extraction.py
 <td>Vite 使用 <code>strictPort</code>；停止冲突服务或明确使用其他端口并匹配后端。</td>
 </tr>
 <tr>
-<td>图谱空白并返回 503</td>
-<td>启动并配置 Neo4j，检查 URI/用户名/密码，构建或加载图谱后再操作节点。</td>
+<td>图谱返回 503</td>
+<td>启动 7687 端口的 Neo4j，在 <code>.env</code> 中设置实际 URI/用户名/密码并重启 Flask；本机已有容器恢复接口 HTTP 200，需重建图谱内容时使用 <code>/api/graph/rebuild</code>。</td>
 </tr>
 <tr>
 <td>监测连接 8086 失败</td>
-<td>启动并配置 InfluxDB URL/org/bucket/token，使用规定的 Excel 表结构。</td>
+<td>启动 InfluxDB OSS v2，在 <code>.env</code> 中设置 URL/org/bucket/token，重启 Flask、检查 <code>/api/timeseries/ping</code> 后导入规定格式的 Excel。</td>
 </tr>
 <tr>
 <td>问答显示 Hugging Face/缓存错误</td>
-<td>在项目环境配置所需本地嵌入模型，或使用兼容的远程后端；保证与已有索引模型一致。</td>
+<td>已有索引使用 Voyage 4；设置 <code>EMBEDDING_QUERY_MODEL=voyageai/voyage-4-nano</code> 并首次下载 Nano，同时配置可用的回答模型。</td>
 </tr>
 <tr>
 <td>向量检索返回 HTTP 409</td>
