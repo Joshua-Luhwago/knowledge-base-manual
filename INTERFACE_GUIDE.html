@@ -1,0 +1,782 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Knowledge Base — Operating Manual</title><style>
+@page {size:A4;margin:16mm 14mm 18mm}*{box-sizing:border-box}body{font:10pt/1.55 'Noto Sans CJK SC','Noto Sans',sans-serif;color:#182735;margin:0 auto;max-width:1000px;padding:28px}h1{font-size:26pt;line-height:1.3;color:#103e57;border-bottom:4px solid #1b8e9a;padding-bottom:16px}h2{font-size:17pt;color:#103e57;margin-top:32px;border-bottom:1px solid #c9dce2;padding-bottom:8px}h3{font-size:12pt;color:#175b70}p{margin:10px 0}a{color:#08788c;text-decoration:none;overflow-wrap:anywhere}code{font:8.5pt/1.4 'Noto Sans Mono CJK SC',monospace;overflow-wrap:anywhere}pre{background:#f0f5f8;border-left:3px solid #20909d;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:8pt;table-layout:auto;margin:16px 0}th{background:#dcecf1;text-align:left;color:#113f55}td,th{padding:6px;border:1px solid #cbdbe2;vertical-align:top;overflow-wrap:anywhere}tr:nth-child(even){background:#f5f8fa}figure{margin:18px 0 24px;break-inside:avoid}figure img{display:block;width:100%;height:auto;border:1px solid #c9dce2;border-radius:4px}figcaption{font-size:8.5pt;color:#566a78;margin-top:6px}img{max-width:100%}li{margin:4px 0}thead{display:table-header-group}tr{break-inside:avoid}h1,h2,h3{break-after:avoid} @media print{body{padding:0;max-width:none}h2{break-before:page;margin-top:0}a{color:#11677a}figure img{max-height:145mm;object-fit:contain}pre{break-inside:avoid}}
+</style><body><h1>Multimodal Knowledge Base — operating manual and visual demonstration</h1>
+<p><strong>English edition · 2 November 2026 · Local repository snapshot</strong></p>
+<p>This guide follows the reference interface manual, with additional completed workflows, recorded browser demonstrations, API coverage and reproducible inputs. On-screen labels remain Chinese so that English readers can find the controls.</p>
+<p><strong>Evidence scope:</strong> Screenshots and recordings are actual captures of this repository served at <code>http://127.0.0.1:5175</code>, with Flask on <code>5002</code>. The separate Agent-System copy on <code>5174/5001</code> was not used for these demonstrations. Automatic startup rebuilding was disabled (<code>DISABLE_KB_BOOTSTRAP=1</code>) to preserve the existing index. Initial inventory: 123 visible files; the saved index summary records 138 documents and 5,719 chunks. These are different inventories, not equivalent counts. Demonstration uploads can change the visible count.</p>
+<p>Confidence is <strong>high</strong> for captured actions and source-verified controls. External-service success is <strong>unverified</strong> where the service was unavailable. All demonstration measurements are synthetic.</p>
+<h2>Contents</h2>
+<ol>
+<li>Quick start and workflow map</li>
+<li>Home, navigation and appearance</li>
+<li>Import and upload history</li>
+<li>PDF parsing and multimodal processing</li>
+<li>Completed spreadsheet import and editing</li>
+<li>Dataset management, previews and recovery</li>
+<li>Vector retrieval and index maintenance</li>
+<li>Knowledge graph</li>
+<li>Evidence-based questions</li>
+<li>Diagnosis: three input modes</li>
+<li>Saved reports and source evidence</li>
+<li>Condition monitoring</li>
+<li>Accounts and management</li>
+<li>Recordings and screen grabs</li>
+<li>API examples and endpoint catalogue</li>
+<li>Command-line tools and troubleshooting</li>
+</ol>
+<h2>1. Quick start and workflow map</h2>
+<p>Use an existing project environment (<code>venv/</code> or <code>.venv/</code>). Never install project dependencies in conda base. In separate terminals:</p>
+<pre><code class="language-bash">source venv/bin/activate
+python app.py
+</code></pre>
+<pre><code class="language-bash">cd frontend
+npm run dev
+</code></pre>
+<p>Default development frontend: <code>http://127.0.0.1:5173</code>. Backend port comes from <code>.env</code>; the supplied example uses <code>5001</code>. Vite proxies <code>/api</code> and <code>/pdfs</code> to that backend. The <code>5175/5002</code> ports in this guide were isolated capture ports. A built <code>frontend/dist</code> can also be served by Flask.</p>
+<p><strong>Main workflow:</strong> import one file → extraction/cleaning → compare source and Markdown → edit if needed → <strong>保存并入库</strong> → find the document in <strong>数据集管理</strong> → use retrieval/graph/Q&amp;A → enter an anomaly in <strong>诊断报告</strong> → open its saved report.</p>
+<table>
+<thead>
+<tr>
+<th>Destination</th>
+<th>Route</th>
+<th>Main action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>首页</td>
+<td><code>/</code></td>
+<td>Asset overview, shortcuts and recent questions</td>
+</tr>
+<tr>
+<td>知识导入</td>
+<td><code>/parse</code></td>
+<td>Upload history and new import</td>
+</tr>
+<tr>
+<td>Import workspace</td>
+<td><code>/parse/create</code></td>
+<td>Upload, inspect, edit, save</td>
+</tr>
+<tr>
+<td>数据集管理</td>
+<td><code>/dataset</code></td>
+<td>Filter, preview, rename and delete</td>
+</tr>
+<tr>
+<td>知识图谱</td>
+<td><code>/graph</code></td>
+<td>Search, inspect relations and evidence chains</td>
+</tr>
+<tr>
+<td>知识问答</td>
+<td><code>/qa</code></td>
+<td>Ask questions and inspect citations</td>
+</tr>
+<tr>
+<td>诊断报告</td>
+<td><code>/diagnosis</code></td>
+<td>Run anomaly diagnosis</td>
+</tr>
+<tr>
+<td>Saved report</td>
+<td><code>/reports/&lt;reportId&gt;</code></td>
+<td>Reopen a persistent report</td>
+</tr>
+<tr>
+<td>状态监测</td>
+<td><code>/timeseries</code></td>
+<td>Import and visualize equipment series</td>
+</tr>
+<tr>
+<td>平台管理</td>
+<td><code>/manage</code></td>
+<td>Current management entry screen</td>
+</tr>
+</tbody></table>
+<p><code>/vector</code>, <code>/vector/documents</code> and <code>/vector/documents/:docKey</code> redirect to <code>/dataset</code>. <code>VectorPage.vue</code> exists in the source tree but is not registered as a reachable page.</p>
+<h2>2. Home, navigation and appearance</h2>
+<p>Open <strong>首页</strong>. The page presents the knowledge workflow, asset composition, processing-state counts, category distribution, condition-monitoring area and suggested/recent questions. Scroll down for module cards; <strong>进入系统</strong> and module links lead into workspaces. Summary, quality and distribution are supplied by distinct APIs, so their counts can differ.</p>
+<p>Use the top navigation to change work areas. The theme switch toggles light/dark appearance and stores the choice in browser local storage. <strong>设置 → 用户管理</strong> opens <code>/manage</code>; <strong>退出</strong> currently returns to the home page.</p>
+<figure><img src="screenshots/33-home-loaded.png" alt="Home after data loading"><figcaption>Home after data loading</figcaption></figure>
+<figure><img src="screenshots/02-theme.png" alt="Light appearance"><figcaption>Light appearance</figcaption></figure>
+<figure><img src="screenshots/03-settings.png" alt="Settings menu"><figcaption>Settings menu</figcaption></figure>
+<h2>3. Import and upload history</h2>
+<p>Open <strong>知识导入</strong>. <strong>开始导入</strong> opens the upload workspace. The history table shows file name/type, destination category, upload time, state and available location actions. Use its search field, type filter (PDF/image/Excel/audio/video) and state filter (completed/processing/failed) to narrow the list. <strong>查看定位</strong> opens the corresponding dataset file when one has been committed.</p>
+<p>In <code>/parse/create</code>, click or drag a single supported file into the upload zone. Fill <strong>文档名称</strong>, select <strong>保存栏目</strong>, or select <strong>+ 新增栏目</strong> and enter a name. Remove an incorrectly queued file before submitting. PDF inputs additionally expose <strong>解析策略</strong>. Start processing using the upload action, then follow the timeline and log entries.</p>
+<p>The file picker accepts PDF, Excel (<code>xlsx/xls/xlsm</code>), common images, audio and video extensions. Each displayed upload is one file. Internal queue code does not imply a multi-file batch picker.</p>
+<figure><img src="screenshots/04-import.png" alt="Import history and workflow"><figcaption>Import history and workflow</figcaption></figure>
+<figure><img src="screenshots/05-upload.png" alt="New import workspace"><figcaption>New import workspace</figcaption></figure>
+<figure><img src="screenshots/23-upload-selected.png" alt="Selected file and destination controls"><figcaption>Selected file and destination controls</figcaption></figure>
+<h2>4. PDF parsing and multimodal processing</h2>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Processing and operator action</th>
+<th>Verification in this session</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PDF</td>
+<td><strong>自动（推荐）</strong>, <strong>高保真文本（PyPDF）</strong>, <strong>复杂版面（Docling）</strong>, or <strong>扫描件全页 OCR</strong>. Compare source and extracted text; change strategy and use <strong>重新解析</strong> for an eligible uncommitted task.</td>
+<td>Existing source PDF, extracted text and chunks opened; new OCR/Docling runs not performed.</td>
+</tr>
+<tr>
+<td>Excel</td>
+<td>Parse workbook sheets into Markdown tables; inspect the sheet preview and extracted text.</td>
+<td>New two-row workbook processed, edited and committed.</td>
+</tr>
+<tr>
+<td>Image</td>
+<td>Local Ollama or configured remote vision processing produces Markdown; compare with source image.</td>
+<td>Existing source image preview opened; new model inference not run.</td>
+</tr>
+<tr>
+<td>Audio</td>
+<td>Speech recognition produces a transcript, then an LLM organizes cleaned Markdown.</td>
+<td>Source-verified implementation; no audio sample present for execution.</td>
+</tr>
+<tr>
+<td>Video, remote</td>
+<td>Default remote path extracts audio and returns its ASR transcript.</td>
+<td>Source-verified implementation; not executed.</td>
+</tr>
+<tr>
+<td>Video, local</td>
+<td><code>MM_VIDEO_PROVIDER=local</code> or <code>ollama</code>: FFmpeg samples frames; local vision model describes frames and produces Markdown.</td>
+<td>Source-verified implementation; not executed.</td>
+</tr>
+</tbody></table>
+<p>Remote video processing is <strong>transcript-only</strong> in the current implementation; it does not also perform visual defect detection. Local video processing uses frame summaries. FFmpeg/ffprobe and the selected model service are required for these paths.</p>
+<p>The preview supports source PDFs, images, workbook sheets and native audio/video players when a source exists. <strong>编辑 → 保存</strong> updates the extraction draft; <strong>保存并入库</strong> is a separate step that commits the source and cleaned/edited Markdown. Saving triggers incremental knowledge ingestion, whose vector/graph success depends on its services.</p>
+<figure><img src="screenshots/07-source.png" alt="Existing PDF source preview"><figcaption>Existing PDF source preview</figcaption></figure>
+<figure><img src="screenshots/08-extraction.png" alt="Existing extracted Markdown"><figcaption>Existing extracted Markdown</figcaption></figure>
+<figure><img src="screenshots/09-chunks.png" alt="Empty chunk state for one existing document"><figcaption>Empty chunk state for one existing document</figcaption></figure>
+<figure><img src="screenshots/51-populated-chunks.png" alt="Populated chunk list from another existing document"><figcaption>Populated chunk list from another existing document</figcaption></figure>
+<h2>5. Completed spreadsheet import and editing</h2>
+<p>Reproduce with manual-demo.xlsx. The sheet <strong>主变压器时序</strong> contains two synthetic readings for <code>MANUAL-DEMO-001</code>: 72/76°C and 42/46 MW, at 08:00/09:00 on 1 November 2026 (+08:00).</p>
+<ol>
+<li>Upload the workbook and name it <code>Manual demo — synthetic transformer readings</code>.</li>
+<li>Wait for <strong>表格解析</strong> and <strong>文本清洗</strong> to complete. The observed engine was <code>openpyxl+pandas</code>.</li>
+<li>Review the source table beside the Markdown table. Processing may open an enlarged preview automatically; use <strong>关闭</strong> to return to the workspace.</li>
+<li>Click <strong>编辑</strong>, amend the Markdown, then <strong>保存</strong>. The demonstrated edit explicitly labels the readings synthetic.</li>
+<li>Click <strong>保存并入库</strong>. Find the saved workbook in the dataset, reopen it, and verify <strong>抽取结果</strong> contains the edited draft.</li>
+</ol>
+<p><strong>Observed result:</strong> the source workbook remained readable; the edited Markdown was retained after commit. Incremental retrieval ingestion did not establish a successful new searchable index in this environment. Workbook import into the knowledge library is separate from <strong>状态监测</strong> import into InfluxDB.</p>
+<figure><img src="screenshots/24-upload-processed.png" alt="Actual workbook extraction"><figcaption>Actual workbook extraction</figcaption></figure>
+<figure><img src="screenshots/25-markdown-edit.png" alt="Editing the extraction draft"><figcaption>Editing the extraction draft</figcaption></figure>
+<figure><img src="screenshots/26-markdown-saved.png" alt="Saved draft before commit"><figcaption>Saved draft before commit</figcaption></figure>
+<figure><img src="screenshots/44-edited-extraction.png" alt="Edited content reopened from the library"><figcaption>Edited content reopened from the library</figcaption></figure>
+<h2>6. Dataset management, previews and recovery</h2>
+<p>Open <strong>数据集管理</strong>. Filter using <strong>资料分类 → 设备对象 → 业务场景</strong>, with <strong>使用场景</strong> as an additional facet. Search by document name/device type. Switch between <strong>文档</strong> and <strong>图片</strong>, collapse the sidebar, use <strong>上一页/下一页</strong>, or select rows with checkboxes. Selection alone does not expose a batch operation in this template.</p>
+<p>Click a document name to open its preview. Use source preview, <strong>抽取结果</strong>, <strong>切分块</strong>, open-source-file, fullscreen and close controls. PDFs use an iframe; images show the original; workbooks show sheet tabs and cell tables. Some existing entries display <strong>未知</strong> because their title metadata is incomplete; use source/category context to identify them.</p>
+<p>Open <strong>… → 编辑文档名称</strong>, change the title, then <strong>保存</strong>; <strong>取消</strong> or Escape abandons the edit. The title-map change does not rename the underlying source file. <strong>… → 删除</strong> soft-deletes the source and associated Markdown to the local trash and excludes it from visible results.</p>
+<p><strong>Demonstrated:</strong> the synthetic workbook was renamed <code>Manual demo — verified rename</code>, soft-deleted, restored using the actual backend recovery endpoint, and reopened. No pre-existing document was deleted. Recovery uses <code>POST /api/pdfs/restore</code> with <code>{&quot;file&quot;:&quot;&lt;relative source path&gt;&quot;}</code>. A recovery drawer exists in the component, but the current template has no visible button opening it; use the API until that entry is wired. Trash records store a 30-day <code>purge_after_ts</code>; that field is not proof that a scheduled purge job runs.</p>
+<figure><img src="screenshots/06-dataset.png" alt="Document library"><figcaption>Document library</figcaption></figure>
+<figure><img src="screenshots/28-dataset-search.png" alt="Search for the synthetic workbook"><figcaption>Search for the synthetic workbook</figcaption></figure>
+<figure><img src="screenshots/29-rename.png" alt="Rename editing"><figcaption>Rename editing</figcaption></figure>
+<figure><img src="screenshots/30-delete-demo.png" alt="After deleting only the demo file"><figcaption>After deleting only the demo file</figcaption></figure>
+<figure><img src="screenshots/42-restored.png" alt="Demo file restored"><figcaption>Demo file restored</figcaption></figure>
+<figure><img src="screenshots/43-excel-preview.png" alt="Workbook source preview"><figcaption>Workbook source preview</figcaption></figure>
+<figure><img src="screenshots/31-images.png" alt="Image library"><figcaption>Image library</figcaption></figure>
+<figure><img src="screenshots/32-image-preview.png" alt="Original image preview"><figcaption>Original image preview</figcaption></figure>
+<figure><img src="screenshots/46-category-filter.png" alt="Category filter"><figcaption>Category filter</figcaption></figure>
+<figure><img src="screenshots/47-pagination.png" alt="Pagination"><figcaption>Pagination</figcaption></figure>
+<figure><img src="screenshots/48-collapse.png" alt="Collapsed sidebar"><figcaption>Collapsed sidebar</figcaption></figure>
+<h2>7. Vector retrieval and index maintenance</h2>
+<p>There is no separate vector workbench in the active router. Inspect chunks in the dataset preview, or use the backend endpoints:</p>
+<ul>
+<li><code>GET /api/vector/overview</code>: index summary, distributions and sample chunks.</li>
+<li><code>GET /api/vector/docs</code>: document-level indexing information.</li>
+<li><code>GET /api/vector/doc-chunks?doc_id=&lt;id&gt;&amp;limit=200</code>: ordered chunks and provenance.</li>
+<li><code>POST /api/vector/search</code>: <code>query</code>, optional <code>top_k</code> (1–100), <code>category</code>, <code>doc_id</code>. Returns scores, text and available source-page/clause/line metadata.</li>
+</ul>
+<p>The search implementation reads a FAISS inner-product index, embeds the query, retrieves candidates, filters by document/category and excludes deleted documents. A dimension mismatch returns HTTP 409 and triggers a rebuild task. An absent index or unavailable embedding model must be resolved before successful semantic retrieval.</p>
+<p><strong>Observed:</strong> overview/docs returned HTTP 200. The stored summary reports a 1,024-dimensional <code>voyage-4-large</code> index. The configured local query-embedding path lacked its cached model, causing fresh Q&amp;A retrieval failure. Matching dimensions alone does not establish model compatibility; use the same embedding model for indexing and querying.</p>
+<p>Maintenance endpoints are backend operations: <code>POST /api/kb/build</code> (combined), <code>/api/vector/rebuild</code> (vector only), <code>/api/graph/rebuild</code> (graph only). Poll <code>GET /api/kb/build/&lt;task_id&gt;</code> for stages, logs and result. A returned task ID means accepted, not completed. Existing indexes were not deliberately rebuilt for this manual.</p>
+<h2>8. Knowledge graph</h2>
+<p>Open <strong>知识图谱</strong>. Enter equipment, a metric, a fault or standard in <strong>统一检索</strong>, then click <strong>搜索</strong> or press Enter. The page requests a subgraph and evidence chains. Suggestions and topic chips focus matching entities. Select a node to inspect/focus it; drag/zoom the D3 network and use <strong>+</strong>, <strong>−</strong>, <strong>适配</strong>. <strong>刷新图谱</strong> reloads; <strong>图谱大屏展示/回到总览</strong> reset filters.</p>
+<p>The visible workspace includes node/edge counts, typed-node counts, current zoom, search results and evidence-chain summaries. Backend entity lookup supports name/type and query limits; chain lookup supports seed limit, chain limit and one/two hops. Typed extraction includes <code>StandardClause</code>, <code>FaultMode</code>, <code>InspectionTask</code>, <code>MaintenanceAction</code>, <code>ThresholdRule</code>, with relationships linking evidence, faults, inspections and actions.</p>
+<p><strong>Observed:</strong> <code>/api/graph/overview</code> returned HTTP 503 because Neo4j on port 7687 was unavailable. Searching <strong>油温</strong> displayed the actual unavailable/empty state. A populated network, node selection and successful graph expansion were not demonstrated. Configure the Neo4j connection, load the graph and repeat these actions to exercise that path.</p>
+<figure><img src="screenshots/11-graph.png" alt="Graph workspace with actual Neo4j state"><figcaption>Graph workspace with actual Neo4j state</figcaption></figure>
+<figure><img src="screenshots/12-graph-search.png" alt="Keyword search and evidence-chain area"><figcaption>Keyword search and evidence-chain area</figcaption></figure>
+<h2>9. Evidence-based questions</h2>
+<p>Open <strong>知识问答</strong>. Choose a suggested category/question or type a question. <strong>Enter</strong> sends; <strong>Ctrl+Enter</strong> inserts a line break. The send button is disabled during execution. <strong>新建对话</strong> starts a fresh conversation; selecting history reopens a saved answer. The history context menu supports deletion of a saved question.</p>
+<p>Answers can include inline <strong>【1】</strong> citations, source-document links and a right-hand <strong>引用文本块</strong> panel with up to five evidence excerpts. <strong>查看文档</strong> opens the associated dataset source; <strong>复制</strong> copies the excerpt. Inspect page, clause, section and line metadata where present. These fields describe available source provenance, not a guarantee that each old record has a resolvable PDF.</p>
+<p><strong>Demonstrated:</strong> a fresh DGA question was submitted and returned a missing-model error. A pre-existing saved overheating answer was then reopened, showing citations and excerpts from its recorded retrieval. The historical answer was not regenerated, and its engineering claims were not independently revalidated here.</p>
+<figure><img src="screenshots/13-qa.png" alt="Question workspace and history"><figcaption>Question workspace and history</figcaption></figure>
+<figure><img src="screenshots/14-qa-answer.png" alt="Actual fresh-question error"><figcaption>Actual fresh-question error</figcaption></figure>
+<figure><img src="screenshots/34-qa-history.png" alt="Previously saved answer with inline citations"><figcaption>Previously saved answer with inline citations</figcaption></figure>
+<figure><img src="screenshots/35-qa-citations.png" alt="Historical evidence excerpts"><figcaption>Historical evidence excerpts</figcaption></figure>
+<h2>10. Diagnosis: three input modes</h2>
+<p>Open <strong>诊断报告</strong> (<code>/diagnosis</code>). The tabs select <strong>结构化异常</strong>, <strong>自然语言</strong>, or <strong>混合输入</strong>. Natural language supplies a question; structured mode supplies equipment, symptoms/signals and measured values; hybrid combines both. Switching modes changes the form used for submission.</p>
+<p>Structured fields include equipment ID/name/type, station, component, model and voltage; observed phenomena and one-item-per-line symptoms/signals; measurement ID/name/key, value, unit, timestamp and source. Add measurements with <strong>+ 添加测量</strong>, or <strong>移除</strong> an extra row. Enter attention/warning/alarm thresholds and select <strong>数值越高越危险</strong> or <strong>数值越低越危险</strong>. History accepts one <code>timestamp,value</code> pair per line. Advanced configuration exposes case ID, retrieval <code>top_k</code> and debug output.</p>
+<p><strong>Reproduce the completed demo:</strong> click <strong>加载示例</strong>, inspect its two measurements, then <strong>运行诊断</strong>. The built-in example uses hybrid input. It supplies top-oil temperature 95°C (thresholds 85/90/95) and load rate 87% (80/85/95). The actual output classified them as <strong>alarm</strong> and <strong>warning</strong>, respectively, and overall risk as <strong>Critical</strong>. A persistent report was generated.</p>
+<p>Read the result&#39;s anomaly summary, fault candidates, checks, maintenance actions, applicability, contradictions, missing evidence and rule hits. Upper/lower threshold direction changes the comparison; a missing threshold is not an automatic normal finding. Evidence-enriched thresholds and discrepancies are displayed when available.</p>
+<p><strong>Interpretation of this run:</strong> vector evidence count and graph candidate count were both zero. The displayed overheating candidate and checks were deterministic fallbacks/standard-topic hints, explicitly labeled in the result. The 85/90/95 values were example inputs, not newly retrieved standard limits. No real equipment was diagnosed.</p>
+<figure><img src="screenshots/36-natural-language.png" alt="Natural-language input"><figcaption>Natural-language input</figcaption></figure>
+<figure><img src="screenshots/37-structured.png" alt="Structured anomaly form"><figcaption>Structured anomaly form</figcaption></figure>
+<figure><img src="screenshots/16-diagnosis-example.png" alt="Loaded hybrid example"><figcaption>Loaded hybrid example</figcaption></figure>
+<figure><img src="screenshots/17-diagnosis-result.png" alt="Actual completed diagnosis and report link"><figcaption>Actual completed diagnosis and report link</figcaption></figure>
+<h2>11. Saved reports and source evidence</h2>
+<p>Click <strong>查看完整报告</strong> after a successful run. The saved-report route requires a real report ID; this session generated <code>rpt-1793633495-f5c289a2</code>. The report presents input facts and normalized measurements, thresholds/rules, candidates, inspections/actions, and supporting evidence/technical details. Expand <strong>四、附加追踪与技术细节</strong> to inspect pipeline and enrichment notes. Scroll through the full report; the screenshots show its beginning and lower sections.</p>
+<p>Reports are persisted as local JSON under <code>uploads/reports/</code>. List them with <code>GET /api/reports</code>, load one with <code>GET /api/reports/&lt;report_id&gt;</code>, or rebuild a report from an available run using <code>POST /api/reports/from-run/&lt;run_id&gt;</code>. Run detail is held in process memory, while saved report files survive restart. Keep the report ID to reopen the document.</p>
+<p>Evidence buttons open a resolved PDF reference or the dataset document. <code>/api/references/pdf/&lt;token&gt;</code> resolves a registered source reference; it requires a real token. In this run, the two supporting evidence items were input observations (SCADA/EMS), not retrieved document excerpts. No successful source-PDF reference from this diagnosis was claimed.</p>
+<p>The application has no dedicated report PDF-export button in this view. The Chinese/English PDFs accompanying this manual are generated documentation. Use browser printing separately if a diagnosis report must be printed.</p>
+<figure><img src="screenshots/18-report.png" alt="Saved report header and measured facts"><figcaption>Saved report header and measured facts</figcaption></figure>
+<figure><img src="screenshots/19-report-evidence.png" alt="Rule-based reasoning and recommendations"><figcaption>Rule-based reasoning and recommendations</figcaption></figure>
+<figure><img src="screenshots/38-report-bottom.png" alt="Input-observation evidence panel"><figcaption>Input-observation evidence panel</figcaption></figure>
+<figure><img src="screenshots/49-report-reasoning.png" alt="Fault candidates and action recommendations"><figcaption>Fault candidates and action recommendations</figcaption></figure>
+<figure><img src="screenshots/50-report-pipeline.png" alt="Expanded technical details and pipeline stages"><figcaption>Expanded technical details and pipeline stages</figcaption></figure>
+<h2>12. Condition monitoring</h2>
+<p>Open <strong>状态监测</strong>. Its separate file picker imports equipment series directly into InfluxDB. Choose an Excel workbook and click <strong>上传并导入时序数据</strong>. Recognized sheet-name markers are <strong>主变压器时序</strong>, <strong>GIS时序</strong>, <strong>断路器时序</strong>, <strong>主变压器运行日志</strong>. Each usable sheet needs <code>timestamp</code> or <code>log_date</code>, plus <code>device_id</code>. For example, manual-demo.xlsx supplies <code>top_oil_temp_c</code> and <code>load_mw</code>.</p>
+<p>For <strong>单台设备多指标</strong>, select data type and device, toggle metric chips and choose <strong>归一化对比/原值对比</strong>. Normalization supports shape comparison; read the result table for original values/units. For <strong>单指标多设备</strong>, choose a metric and toggle device chips. <strong>刷新</strong> reruns the current selection; the lower query table shows returned data.</p>
+<p><strong>Current behavior:</strong> Neo4j is unrelated to this page; it needs InfluxDB. InfluxDB on 8086 was unavailable, and the actual page displayed connection refusal. No successful time-series write or populated chart was claimed. Although the picker/API accepts CSV, the importer currently calls <code>pandas.read_excel</code>; use a compatible Excel workbook. Legacy <code>.xls</code> additionally depends on its reader engine.</p>
+<p>The importer deletes the measurement&#39;s existing points across the incoming sheet&#39;s date interval (through the following day) before writing new rows. This can replace records for other devices in that interval. The demonstration workbook was uploaded to the knowledge library, not written into a production time-series bucket.</p>
+<figure><img src="screenshots/20-timeseries.png" alt="Condition monitoring with actual service error"><figcaption>Condition monitoring with actual service error</figcaption></figure>
+<figure><img src="screenshots/21-timeseries-compare.png" alt="Single-metric multi-device mode"><figcaption>Single-metric multi-device mode</figcaption></figure>
+<h2>13. Accounts and management</h2>
+<p>The top <strong>登录 / 注册</strong> button has no bound click handler in <code>App.vue</code>. <strong>设置 → 用户管理</strong> navigates to <code>/manage</code>. That page displays permissions, monitoring, configuration and audit cards; <strong>进入管理台</strong> has no bound action. <strong>退出</strong> returns home without calling the authentication logout endpoint. These visible controls are not a completed account-management workflow.</p>
+<p>The backend does implement combined email-code registration/login: <strong>send code → verify code → store issued session tokens → refresh → logout</strong>. Its routes are <code>/api/auth/send-code</code>, <code>/verify-code</code>, <code>/refresh</code>, <code>/logout</code>. Verification creates the user when necessary. SMTP, authentication settings and the local SQLite store support this service. See auth_api_quickstart.md for request/response fields. No email was sent and no real account was created for this manual.</p>
+<figure><img src="screenshots/22-management.png" alt="Current management entry page"><figcaption>Current management entry page</figcaption></figure>
+<h2>14. Recordings and screen grabs</h2>
+<p>The following are actual, silent browser recordings. They move the cursor smoothly along a timed path before each interaction, mark clicks with a pulse, and play at normal speed. Actual waiting and failure states remain visible. MP4 links are broadly compatible; Markdown video embedding depends on the viewer. PDFs show still images and retain video links, not playable embedded video. Keep the <code>videos/</code> folder beside the guides.</p>
+<table>
+<thead>
+<tr>
+<th>Recording</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Interface tour — MP4</td>
+<td>Home/theme/settings; import; dataset PDF/extraction/chunks; graph search; failed fresh Q&A; completed diagnosis/report; monitoring and management</td>
+</tr>
+<tr>
+<td>Import and library — MP4</td>
+<td>Real spreadsheet upload, extraction, draft editing, commit and image preview</td>
+</tr>
+<tr>
+<td>Saved evidence — MP4</td>
+<td>Historical answer/citations, diagnosis modes, report evidence, workbook source and edited extraction</td>
+</tr>
+<tr>
+<td>Report details — MP4</td>
+<td>Scroll through reasoning/actions and expand technical pipeline stages</td>
+</tr>
+<tr>
+<td>Library actions — MP4</td>
+<td>Search, rename, soft delete, API-assisted restore, source preview, category filtering, pagination and sidebar collapse</td>
+</tr>
+</tbody></table>
+<figure><img src="videos/import-preview.gif" alt="Animated import screen recording"><figcaption>Animated import screen recording</figcaption></figure>
+<figure><img src="screenshots/video-grab-diagnosis.png" alt="Frame grabbed from the actual diagnosis recording"><figcaption>Frame grabbed from the actual diagnosis recording</figcaption></figure>
+<figure><img src="screenshots/video-grab-import.png" alt="Frame grabbed from the actual import recording"><figcaption>Frame grabbed from the actual import recording</figcaption></figure>
+<p>Original WebM recordings are also retained for reproducibility. The recordings demonstrate screen workflows; they are distinct from the system&#39;s video-file parsing feature.</p>
+<h2>15. API examples and endpoint catalogue</h2>
+<p>Use the backend port for direct API calls. JSON operations return structured success/error fields; inspect both HTTP status and <code>ok</code>. Uploads use multipart form data. Replace IDs/paths with actual returned values.</p>
+<pre><code class="language-bash">curl http://127.0.0.1:5002/api/vector/overview
+curl http://127.0.0.1:5002/api/reports
+curl -X POST http://127.0.0.1:5002/api/vector/search \
+  -H &#39;Content-Type: application/json&#39; \
+  -d &#39;{&quot;query&quot;:&quot;变压器油温过高&quot;,&quot;top_k&quot;:5}&#39;
+</code></pre>
+<p>The submitted hybrid request is retained as diagnosis-request.json; the actual output is diagnosis-run.json.</p>
+<pre><code class="language-bash">curl -X POST http://127.0.0.1:5002/api/diagnosis/run \
+  -H &#39;Content-Type: application/json&#39; \
+  --data-binary @docs/manual/samples/diagnosis-request.json
+</code></pre>
+<p>That POST creates a new local report. The schema/example/validate endpoints concern the diagnostic schema contract; <code>/api/diagnosis/run</code> accepts the runtime envelope with <code>input_type</code>, <code>question</code>, <code>structured_input</code>, <code>top_k</code>, <code>case_id</code>, <code>include_debug</code>. Do not submit the schema example directly as a runtime request without checking its structure.</p>
+<p>The following catalogue is generated from all Flask route decorators in <code>app.py</code> and the registered vector/time-series/auth modules. <strong>Listed</strong> means implemented in source, not that every mutation or service-dependent route succeeded. The source location identifies its actual handler. The broad API fallback is also included.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Route</th>
+<th>Handler / source</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GET</td>
+<td><code>/</code></td>
+<td><code>index</code> · <code>app.py:1906</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/pdfs</code></td>
+<td><code>list_pdfs</code> · <code>app.py:1914</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/pdfs/reindex</code></td>
+<td><code>reindex_pdfs</code> · <code>app.py:1974</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/pdfs/rename</code></td>
+<td><code>rename_pdf</code> · <code>app.py:1989</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/pdfs/delete</code></td>
+<td><code>soft_delete_pdf</code> · <code>app.py:2020</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/pdfs/deleted</code></td>
+<td><code>list_deleted_pdfs</code> · <code>app.py:2087</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/pdfs/restore</code></td>
+<td><code>restore_deleted_pdf</code> · <code>app.py:2108</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/pdfs/markdown</code></td>
+<td><code>pdf_markdown_preview</code> · <code>app.py:2170</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/fields</code></td>
+<td><code>list_fields</code> · <code>app.py:2207</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/upload-document</code></td>
+<td><code>upload_document</code> · <code>app.py:2212</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/upload-document/&lt;task_id&gt;</code></td>
+<td><code>upload_document_status</code> · <code>app.py:2283</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/upload-document/&lt;task_id&gt;/reparse</code></td>
+<td><code>upload_document_reparse</code> · <code>app.py:2322</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/upload-document/&lt;task_id&gt;/source</code></td>
+<td><code>upload_document_source</code> · <code>app.py:2390</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/upload-document/&lt;task_id&gt;/spreadsheet-preview</code></td>
+<td><code>upload_document_spreadsheet_preview</code> · <code>app.py:2459</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/pdfs/spreadsheet-preview</code></td>
+<td><code>pdf_spreadsheet_preview</code> · <code>app.py:2509</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/pdfs/chunks</code></td>
+<td><code>pdf_chunks_preview</code> · <code>app.py:2532</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/upload-document/&lt;task_id&gt;/metadata</code></td>
+<td><code>upload_document_metadata</code> · <code>app.py:2569</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/upload-history</code></td>
+<td><code>upload_history</code> · <code>app.py:2584</code></td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/api/upload-history/&lt;task_id&gt;</code></td>
+<td><code>upload_history_delete</code> · <code>app.py:2621</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/upload-markdown/&lt;task_id&gt;</code></td>
+<td><code>upload_markdown_preview</code> · <code>app.py:2631</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/upload-markdown/&lt;task_id&gt;/edit</code></td>
+<td><code>upload_markdown_edit</code> · <code>app.py:2713</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/upload-document/&lt;task_id&gt;/commit</code></td>
+<td><code>commit_uploaded_pdf</code> · <code>app.py:2774</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/kb/build</code></td>
+<td><code>kb_build</code> · <code>app.py:2805</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/vector/rebuild</code></td>
+<td><code>vector_rebuild</code> · <code>app.py:2820</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/graph/rebuild</code></td>
+<td><code>graph_rebuild</code> · <code>app.py:2837</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/kb/build/&lt;task_id&gt;</code></td>
+<td><code>kb_build_status</code> · <code>app.py:2854</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/datasets/summary</code></td>
+<td><code>dataset_summary</code> · <code>app.py:2968</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/datasets/distribution</code></td>
+<td><code>dataset_distribution</code> · <code>app.py:3021</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/datasets/quality</code></td>
+<td><code>dataset_quality</code> · <code>app.py:3088</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/datasets/recent-activity</code></td>
+<td><code>dataset_recent_activity</code> · <code>app.py:3117</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/graph/overview</code></td>
+<td><code>graph_overview</code> · <code>app.py:3126</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/graph/subgraph</code></td>
+<td><code>graph_subgraph</code> · <code>app.py:3373</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/graph/entities</code></td>
+<td><code>graph_entities</code> · <code>app.py:3714</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/graph/entity</code></td>
+<td><code>graph_entity_detail</code> · <code>app.py:3786</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/graph/chain</code></td>
+<td><code>graph_chain</code> · <code>app.py:3902</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/qa/ask</code></td>
+<td><code>qa_ask</code> · <code>app.py:4402</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/qa/history</code></td>
+<td><code>qa_history</code> · <code>app.py:4464</code></td>
+</tr>
+<tr>
+<td>DELETE</td>
+<td><code>/api/qa/history/&lt;record_id&gt;</code></td>
+<td><code>qa_history_delete</code> · <code>app.py:4471</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/diagnostic/schema</code></td>
+<td><code>diagnostic_schema</code> · <code>app.py:4478</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/diagnostic/example</code></td>
+<td><code>diagnostic_example</code> · <code>app.py:4487</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/diagnostic/validate</code></td>
+<td><code>diagnostic_validate</code> · <code>app.py:4514</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/diagnosis/run</code></td>
+<td><code>diagnosis_run</code> · <code>app.py:4536</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/diagnosis/runs/&lt;run_id&gt;</code></td>
+<td><code>diagnosis_run_detail</code> · <code>app.py:4655</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/reports</code></td>
+<td><code>report_list</code> · <code>app.py:4664</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/reports/&lt;report_id&gt;</code></td>
+<td><code>report_detail</code> · <code>app.py:4674</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/reports/from-run/&lt;run_id&gt;</code></td>
+<td><code>report_from_run</code> · <code>app.py:4682</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/references/pdf/&lt;token&gt;</code></td>
+<td><code>reference_pdf</code> · <code>app.py:4720</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/&lt;path:_path&gt;</code></td>
+<td><code>api_not_found</code> · <code>app.py:4733</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/pdfs/&lt;path:pdf_path&gt;</code></td>
+<td><code>serve_pdf</code> · <code>app.py:4769</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/&lt;path:path&gt;</code></td>
+<td><code>static_proxy</code> · <code>app.py:4806</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/vector/docs</code></td>
+<td><code>vector_docs</code> · <code>core/vector/routes.py:81</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/vector/overview</code></td>
+<td><code>vector_overview</code> · <code>core/vector/routes.py:109</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/vector/search</code></td>
+<td><code>vector_search</code> · <code>core/vector/routes.py:124</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/vector/doc-chunks</code></td>
+<td><code>vector_doc_chunks</code> · <code>core/vector/routes.py:237</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/timeseries/ping</code></td>
+<td><code>timeseries_ping</code> · <code>core/timeseries/routes.py:17</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/timeseries/overview</code></td>
+<td><code>timeseries_overview</code> · <code>core/timeseries/routes.py:21</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/timeseries/devices</code></td>
+<td><code>timeseries_devices</code> · <code>core/timeseries/routes.py:26</code></td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/timeseries/query</code></td>
+<td><code>timeseries_query</code> · <code>core/timeseries/routes.py:31</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/timeseries/import</code></td>
+<td><code>timeseries_import</code> · <code>core/timeseries/routes.py:39</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/timeseries/upload</code></td>
+<td><code>timeseries_upload</code> · <code>core/timeseries/routes.py:53</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/send-code</code></td>
+<td><code>auth_send_code</code> · <code>core/auth/routes.py:27</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/verify-code</code></td>
+<td><code>auth_verify_code</code> · <code>core/auth/routes.py:42</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/refresh</code></td>
+<td><code>auth_refresh</code> · <code>core/auth/routes.py:58</code></td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/auth/logout</code></td>
+<td><code>auth_logout</code> · <code>core/auth/routes.py:74</code></td>
+</tr>
+</tbody></table>
+<h3>Backend-only operation recipes</h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Inputs and result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Reindex library metadata</td>
+<td><code>POST /api/pdfs/reindex</code>; refreshes local file enumeration/title/category metadata, not the FAISS index.</td>
+</tr>
+<tr>
+<td>Upload and poll</td>
+<td><code>POST /api/upload-document</code> with <code>file</code>, <code>file_type</code>, <code>document_name</code>, <code>parse_strategy</code>, <code>target_category</code>; poll <code>/api/upload-document/&lt;task_id&gt;</code>.</td>
+</tr>
+<tr>
+<td>Reparse</td>
+<td><code>POST .../&lt;task_id&gt;/reparse</code> with <code>parse_strategy</code>; task must exist and be eligible.</td>
+</tr>
+<tr>
+<td>Upload source/preview</td>
+<td><code>GET .../&lt;task_id&gt;/source</code> or <code>/spreadsheet-preview</code>; dataset workbook preview uses <code>/api/pdfs/spreadsheet-preview?file=...</code>.</td>
+</tr>
+<tr>
+<td>Extraction versions</td>
+<td><code>GET /api/upload-markdown/&lt;task_id&gt;?kind=raw</code> or <code>cleaned</code> or <code>edited</code>; edit through <code>POST .../&lt;task_id&gt;/edit</code>.</td>
+</tr>
+<tr>
+<td>Commit</td>
+<td><code>POST /api/upload-document/&lt;task_id&gt;/commit</code> with category, <code>use_edited</code>, <code>upload_meta</code>; returns <code>dataset_file</code>.</td>
+</tr>
+<tr>
+<td>Metadata</td>
+<td><code>GET /api/fields</code>; <code>POST /api/upload-document/&lt;task_id&gt;/metadata</code> updates upload metadata.</td>
+</tr>
+<tr>
+<td>History</td>
+<td><code>GET /api/upload-history</code>; <code>DELETE /api/upload-history/&lt;task_id&gt;</code> removes its history record, not a substitute for dataset deletion.</td>
+</tr>
+<tr>
+<td>Dataset previews</td>
+<td><code>/api/pdfs/markdown?file=...&amp;kind=cleaned</code>; <code>/api/pdfs/chunks?file=...</code>.</td>
+</tr>
+<tr>
+<td>Rename/delete/restore</td>
+<td>POST to <code>/api/pdfs/rename</code> (<code>file</code>, <code>title</code>), <code>/delete</code> (<code>file</code>), <code>/restore</code> (<code>file</code>); inspect <code>/deleted</code>.</td>
+</tr>
+<tr>
+<td>Statistics</td>
+<td><code>/api/datasets/summary</code>, <code>/distribution</code>, <code>/quality</code>, <code>/recent-activity</code>.</td>
+</tr>
+<tr>
+<td>Graph</td>
+<td><code>/api/graph/overview</code>; <code>/subgraph?q=...</code>; <code>/entities?q=...&amp;type=...</code>; <code>/entity?norm_name=...&amp;type=...</code>; <code>/chain?q=...&amp;max_hops=2</code>.</td>
+</tr>
+<tr>
+<td>Q&amp;A</td>
+<td><code>POST /api/qa/ask</code> with <code>question</code>, <code>history</code>; <code>GET /api/qa/history?limit=12</code>; delete one record by ID.</td>
+</tr>
+<tr>
+<td>Monitoring</td>
+<td><code>/api/timeseries/ping</code>, <code>/overview</code>, <code>/devices</code>; <code>/query?measurement=...&amp;device_id=...&amp;days=30&amp;limit=5000</code>; multipart <code>/upload</code> or JSON <code>/import</code> with server-local <code>local_path</code>.</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>send-code (<code>target</code>, <code>channel</code>); verify-code (<code>target</code>, <code>channel</code>, <code>code</code>); refresh/logout with session-token fields described in the auth quickstart.</td>
+</tr>
+</tbody></table>
+<p>All exposed endpoint families are covered above. For internal implementation functions, function-inventory.csv lists Python and Vue/JavaScript declarations by source and line. It is a navigation inventory, not a claim that each helper has been individually executed.</p>
+<h2>16. Command-line tools and troubleshooting</h2>
+<p>Run from the repository root using the project interpreter. <code>PYTHONPATH=.</code> lets scripts import <code>core</code> reliably.</p>
+<pre><code class="language-bash">venv/bin/python main.py --input-root pdfs --output-root pdfs/markdown --clean
+venv/bin/python main.py --clean-only
+venv/bin/python main.py --full-page-ocr --overwrite --clean
+PYTHONPATH=. venv/bin/python scripts/import_timeseries_excel.py /path/to/data.xlsx
+venv/bin/python scripts/import_dga_excel.py /path/to/dga.xlsx --skip-ingest
+PYTHONPATH=. venv/bin/python scripts/evaluate_retrieval_strategies.py --help
+venv/bin/python scripts/eval_kg_extraction.py
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>What it does / required input</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>main.py</code></td>
+<td>Bulk PDF conversion and optional cleaning; <code>--clean-only</code> cleans existing Markdown; <code>--overwrite</code> replaces prior output.</td>
+</tr>
+<tr>
+<td><code>import_timeseries_excel.py</code></td>
+<td>Uses the same InfluxDB importer and replacement semantics as monitoring. Requires the recognized sheets and live InfluxDB.</td>
+</tr>
+<tr>
+<td><code>import_dga_excel.py</code></td>
+<td>First-sheet headers must start <code>H2, CH4, C2H6, C2H4, C2H2, 故障类型</code>; generates a knowledge summary and can ingest it. <code>--category</code>, <code>--basename</code>, <code>--skip-ingest</code> control output.</td>
+</tr>
+<tr>
+<td><code>evaluate_retrieval_strategies.py</code></td>
+<td>Compares full-document, sliding-window, paragraph and recursive splitting using embedding or TF-IDF retrieval; supports FAISS/NumPy search and configurable chunk size/overlap/top-k. Consult <code>--help</code>.</td>
+</tr>
+<tr>
+<td><code>eval_kg_extraction.py</code></td>
+<td>Scores typed graph extraction against <code>docs/kg_extraction_eval_gold.json</code>; that gold file is absent in this snapshot, so the command needs its dataset before it can run.</td>
+</tr>
+<tr>
+<td>Worker modules</td>
+<td><code>core/doc/pipeline_worker.py</code> and <code>multimodal_worker.py</code> are subprocess entry points used by the upload service, rather than independent operator workspaces.</td>
+</tr>
+</tbody></table>
+<p>These maintenance/evaluation commands were documented from source, not rerun to imply fresh experimental results. Files with a <code> 2</code> suffix are duplicate source artifacts, not additional registered product features.</p>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Check / action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Frontend opens but API requests fail</td>
+<td>Verify backend port and Vite proxy; distinguish the current repository from another running copy.</td>
+</tr>
+<tr>
+<td>Port 5173 occupied</td>
+<td>Vite uses <code>strictPort</code>; stop the conflicting server or explicitly choose another port and matching backend.</td>
+</tr>
+<tr>
+<td>Graph empty with 503</td>
+<td>Start/configure Neo4j; check URI/user/password; build/load graph before node operations.</td>
+</tr>
+<tr>
+<td>Monitoring fails on 8086</td>
+<td>Start/configure InfluxDB URL/org/bucket/token; use the recognized Excel structure.</td>
+</tr>
+<tr>
+<td>Hugging Face/cache error in Q&amp;A</td>
+<td>Provision the configured local embedding model in the project environment, or configure a compatible remote backend; ensure it matches the saved index model.</td>
+</tr>
+<tr>
+<td>HTTP 409 from vector search</td>
+<td>Query/index dimensions differ; inspect the returned rebuild task and wait for successful completion.</td>
+</tr>
+<tr>
+<td>Upload processed but not visible in dataset</td>
+<td>Finish <strong>保存并入库</strong>; inspect task status and <code>dataset_file</code>. Extraction success alone is not commit.</td>
+</tr>
+<tr>
+<td>Existing item titled 未知</td>
+<td>Inspect source/category and use rename to provide title metadata.</td>
+</tr>
+<tr>
+<td>Report does not reopen</td>
+<td>Use a persisted report ID; a run ID is different and process-local run records can disappear at restart.</td>
+</tr>
+<tr>
+<td>Markdown video does not play</td>
+<td>Open the linked MP4 directly or use the HTML edition. PDF uses stills.</td>
+</tr>
+</tbody></table>
+<p>Evidence files include the route inventory, GET checks, actual diagnosis result, restoration result and visible text captured per screen. Rebuild instructions are in tools/README.md.</p>
+<section class="screen-videos"><h2>Video playback (HTML edition)</h2><p>interface-tour</p><video controls controlsList="nodownload" preload="metadata" style="width:100%" src="videos/interface-tour.mp4"></video><p>import-and-library</p><video controls controlsList="nodownload" preload="metadata" style="width:100%" src="videos/import-and-library.mp4"></video><p>evidence-and-media</p><video controls controlsList="nodownload" preload="metadata" style="width:100%" src="videos/evidence-and-media.mp4"></video><p>library-actions</p><video controls controlsList="nodownload" preload="metadata" style="width:100%" src="videos/library-actions.mp4"></video><p>report-details</p><video controls controlsList="nodownload" preload="metadata" style="width:100%" src="videos/report-details.mp4"></video></section><style>@media print{.screen-videos{display:none}}</style></body></html>
