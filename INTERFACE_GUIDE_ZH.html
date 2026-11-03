@@ -3,8 +3,8 @@
 </style><body><h1>多模态知识库——功能演示与操作手册</h1>
 <p><strong>中文版 · 2026 年 11 月 3 日 · 本地仓库版本快照</strong></p>
 <p>本手册沿用参考文档的图文操作形式，补充已实际完成的流程、浏览器录屏、接口目录及可复现输入。按钮名称与中文界面保持一致。</p>
-<p><strong>证据范围：</strong> 更新后的截图和界面全览录屏来自本仓库：前端位于 <code>http://127.0.0.1:5175</code>，Flask 使用 <code>5003</code> 端口，独立的 Neo4j 演示数据库使用 Bolt <code>7688</code> 端口。其他录屏使用同一仓库及 <code>5002</code> 端口。设置 <code>DISABLE_KB_BOOTSTRAP=1</code> 以避免自动重建向量索引。已有索引摘要记录 138 份文档、5,719 个文本块；演示上传后可见文件数可能不同。</p>
-<p>已截图操作和源码核实功能的置信度为<strong>高</strong>；依赖 InfluxDB 的操作仍未验证。所有演示测量值均为合成数据。</p>
+<p><strong>证据范围：</strong> 更新后的截图和界面全览录屏来自本仓库：前端位于 <code>http://127.0.0.1:5176</code>，Flask 使用 <code>5004</code> 端口，独立的 Neo4j 演示数据库使用 Bolt <code>7688</code> 端口。导入和数据集录屏使用同一仓库及 <code>5002</code> 端口；状态监测使用 <code>8087</code> 端口的独立 InfluxDB。设置 <code>DISABLE_KB_BOOTSTRAP=1</code> 以避免自动重建向量索引。已有索引摘要记录 138 份文档、5,719 个文本块；演示上传后可见文件数可能不同。</p>
+<p>图谱、新问答、诊断与状态监测流程均已实测，置信度为<strong>高</strong>。所有演示测量值均为合成数据。</p>
 <h2>目录</h2>
 <ol>
 <li>启动与工作流程</li>
@@ -32,7 +32,7 @@ python app.py
 <pre><code class="language-bash">cd frontend
 npm run dev
 </code></pre>
-<p>默认开发前端为 <code>http://127.0.0.1:5173</code>。后端端口读取 <code>.env</code>，示例配置为 <code>5001</code>。Vite 将 <code>/api</code>、<code>/pdfs</code> 转发至后端。本手册使用 <code>5175/5002</code> 作为隔离的截图端口。构建后的 <code>frontend/dist</code> 也可由 Flask 提供页面服务。</p>
+<p>默认开发前端为 <code>http://127.0.0.1:5173</code>。后端端口读取 <code>.env</code>，示例配置为 <code>5001</code>。Vite 将 <code>/api</code>、<code>/pdfs</code> 转发至后端。更新后的界面全览使用隔离的 <code>5176/5004</code> 截图端口。构建后的 <code>frontend/dist</code> 也可由 Flask 提供页面服务。</p>
 <p><strong>主流程：</strong> 上传单份资料 → 抽取与清洗 → 对照源文件和 Markdown → 必要时编辑 → <strong>保存并入库</strong> → 在<strong>数据集管理</strong>定位 → 检索、图谱或问答 → 在<strong>诊断报告</strong>输入异常 → 打开持久化报告。</p>
 <table>
 <thead>
@@ -192,7 +192,7 @@ npm run dev
 <li><code>POST /api/vector/search</code>：提供 <code>query</code>，可选 <code>top_k</code>（1–100）、<code>category</code>、<code>doc_id</code>；返回分数、文本及可用页码、条款和行号。</li>
 </ul>
 <p>检索读取 FAISS 内积索引，对问题向量化，召回候选，再按文档、分类过滤并排除已删除资料。维度不匹配时返回 HTTP 409 并触发重建任务。索引缺失或嵌入模型不可用时，需先解决相应问题。</p>
-<p><strong>录制时的问题：</strong> overview/docs 返回 HTTP 200，但已有 1,024 维索引由 <code>voyage-4-large</code> 构建，默认本地路径却尝试从 Hugging Face 缓存加载这一 API 模型，导致新问答检索失败。针对该 Voyage 4 索引，可设置 <code>EMBEDDING_QUERY_MODEL=voyageai/voyage-4-nano</code>，本地 Nano 产生兼容的 1,024 维查询向量，无需重建索引。首次下载设置 <code>LOCAL_EMBEDDING_LOCAL_ONLY=0</code>，离线运行再改为 <code>1</code>；生成回答还需可用的语言模型。</p>
+<p><strong>索引兼容性与结果：</strong> 已有 1,024 维 Voyage 4 索引可使用本地 <code>voyageai/voyage-4-nano</code> 查询向量：设置 <code>EMBEDDING_QUERY_MODEL=voyageai/voyage-4-nano</code>，无需重建索引。首次下载设置 <code>LOCAL_EMBEDDING_LOCAL_ONLY=0</code>，离线使用时改为 <code>1</code>。实测检索返回 HTTP 200 和三条命中。</p>
 <p>维护接口包括 <code>POST /api/kb/build</code>（综合构建）、<code>/api/vector/rebuild</code>（仅向量）、<code>/api/graph/rebuild</code>（仅图谱）。使用 <code>GET /api/kb/build/&lt;task_id&gt;</code> 查询阶段、日志和结果。返回任务 ID 只表示已接受，不表示完成。本次未主动重建已有索引。</p>
 <h2>8. 知识图谱</h2>
 <p>打开<strong>知识图谱</strong>，在<strong>统一检索</strong>输入设备、指标、故障或标准，点击<strong>搜索</strong>或回车。页面请求局部图谱与证据链；建议项和主题标签用于定位实体。选中节点后可检查或聚焦，支持拖动、缩放及 <strong>+</strong>、<strong>−</strong>、<strong>适配</strong>。<strong>刷新图谱</strong>重新加载；<strong>图谱大屏展示/回到总览</strong>重置筛选。</p>
@@ -203,9 +203,9 @@ npm run dev
 <h2>9. 带证据的知识问答</h2>
 <p>打开<strong>知识问答</strong>，选择推荐类别、示例问题或自行输入。<strong>Enter</strong>发送，<strong>Ctrl+Enter</strong>换行，执行期间发送按钮禁用。<strong>新建对话</strong>开启新会话；点击历史条目重新打开已有回答，历史项上下文菜单支持删除记录。</p>
 <p>回答可包含行内 <strong>【1】</strong>、来源文档链接，右侧<strong>引用文本块</strong>最多展示五条证据摘录。<strong>查看文档</strong>打开相关数据集资料，<strong>复制</strong>复制文本块。可查看已有的页码、条款、章节与行号；这些是可用来源信息，并不保证每条旧记录都有可解析的 PDF 链接。</p>
-<p><strong>录制时的问题与处理：</strong> 新提交的油色谱问题在生成回答前失败，因为本地嵌入路径无法加载 <code>voyage-4-large</code>。本次分支加入与已有 Voyage 4 索引兼容的本地 <code>voyage-4-nano</code> 查询选项：设置 <code>EMBEDDING_QUERY_MODEL=voyageai/voyage-4-nano</code>，首次下载模型，并配置可用的回答模型（如本地 Ollama <code>qwen2.5:7b</code>）。本分支另行验证了 Nano 与本地 Ollama：新问题返回 HTTP 200，并包含八条证据文本块。录制中打开的过热问题回答为已有历史记录，没有重新生成。</p>
+<p><strong>配置与结果：</strong> 设置 <code>EMBEDDING_QUERY_MODEL=voyageai/voyage-4-nano</code> 后，本地 Nano 为已有 Voyage 4 索引生成兼容的 1,024 维查询向量。再配置可用的回答模型，如本地 Ollama <code>qwen2.5:7b</code>。录屏中的新油色谱问题返回 HTTP 200、带行内引用的回答和八条证据文本块；其他回答截图展示已有历史。</p>
 <figure><img src="screenshots/13-qa.png" alt="问答工作区与历史记录"><figcaption>问答工作区与历史记录</figcaption></figure>
-<figure><img src="screenshots/14-qa-answer.png" alt="新问题实际返回的错误"><figcaption>新问题实际返回的错误</figcaption></figure>
+<figure><img src="screenshots/14-qa-answer.png" alt="新问题回答与行内引用"><figcaption>新问题回答与行内引用</figcaption></figure>
 <figure><img src="screenshots/34-qa-history.png" alt="已有回答及行内引用"><figcaption>已有回答及行内引用</figcaption></figure>
 <figure><img src="screenshots/35-qa-citations.png" alt="历史回答的证据摘录"><figcaption>历史回答的证据摘录</figcaption></figure>
 <h2>10. 三种输入模式的诊断</h2>
@@ -213,13 +213,13 @@ npm run dev
 <p>结构化字段包括设备 ID、名称、类型、站点、部件、型号、电压等级，异常现象和每行一项的症状/信号，以及测点 ID、名称、指标键、数值、单位、时间和来源。通过**+ 添加测量<strong>增加条目，通过</strong>移除<strong>删除多余测量。可输入注意、预警、告警值，并选择</strong>数值越高越危险<strong>或</strong>数值越低越危险**。历史序列每行填写 <code>timestamp,value</code>。高级配置提供案例 ID、检索 <code>top_k</code> 和调试输出。</p>
 <p><strong>复现已完成演示：</strong> 点击<strong>加载示例</strong>，检查两项测量，然后<strong>运行诊断</strong>。内置示例使用混合输入：顶层油温 95°C（阈值 85/90/95），负载率 87%（阈值 80/85/95）。实际结果分别为 <strong>alarm</strong>、<strong>warning</strong>，综合风险为 <strong>Critical</strong>，并生成持久化报告。</p>
 <p>结果包含异常摘要、故障候选、检查建议、处置措施、适用性、矛盾、缺失证据及规则命中。上限/下限方向决定比较方式；缺失阈值不等于正常。有证据补全阈值或阈值差异时会显示相应内容。</p>
-<p><strong>本次结果含义：</strong> 合成示例没有返回向量文本摘录（<code>evidence_count=0</code>），图谱提供 18 个 typed 候选。保存的报告包含两条输入观测和 21 条图谱支持项。85/90/95 是示例输入，并非新检索得到的标准限值；候选建议不是已确认的诊断结论。</p>
+<p><strong>本次结果含义：</strong> 合成示例返回六条向量证据（<code>evidence_count=6</code>）和 18 个 typed 图谱候选。保存的报告包含两条输入观测、20 条 typed 图谱支持项、六条标准条款证据及一条向量证据。85/90/95 是示例输入，并非新检索得到的标准限值；候选建议不是已确认的诊断结论。</p>
 <figure><img src="screenshots/36-natural-language.png" alt="自然语言输入"><figcaption>自然语言输入</figcaption></figure>
 <figure><img src="screenshots/37-structured.png" alt="结构化异常表单"><figcaption>结构化异常表单</figcaption></figure>
 <figure><img src="screenshots/16-diagnosis-example.png" alt="已加载的混合输入示例"><figcaption>已加载的混合输入示例</figcaption></figure>
 <figure><img src="screenshots/17-diagnosis-result.png" alt="实际完成的诊断与报告链接"><figcaption>实际完成的诊断与报告链接</figcaption></figure>
 <h2>11. 持久化报告与来源证据</h2>
-<p>运行成功后点击<strong>查看完整报告</strong>。报告路由必须使用真实 ID；本次生成 <code>rpt-1793660006-ff7678fb</code>。页面展示输入事实、归一化测量、阈值和规则、故障候选、检查与措施，以及支持证据和技术细节。展开<strong>四、附加追踪与技术细节</strong>可查看流水线和证据补全记录。需向下滚动阅读完整报告，截图展示开头及下方内容。</p>
+<p>运行成功后点击<strong>查看完整报告</strong>。报告路由必须使用真实 ID；本次生成 <code>rpt-1793689314-0fd6a86d</code>。页面展示输入事实、归一化测量、阈值和规则、故障候选、检查与措施，以及支持证据和技术细节。展开<strong>四、附加追踪与技术细节</strong>可查看流水线和证据补全记录。需向下滚动阅读完整报告，截图展示开头及下方内容。</p>
 <p>报告以 JSON 持久化在 <code>uploads/reports/</code>。使用 <code>GET /api/reports</code> 列表查询，<code>GET /api/reports/&lt;report_id&gt;</code> 读取，或在运行记录仍可用时使用 <code>POST /api/reports/from-run/&lt;run_id&gt;</code> 重建报告。运行记录保存在进程内存中，报告文件可跨重启保留；请保存报告 ID。</p>
 <p>存在来源元数据时，证据按钮可打开已解析的 PDF 引用或数据集文档；<code>/api/references/pdf/&lt;token&gt;</code> 需要已注册 token。本次报告列出两条 SCADA/EMS 输入观测和 21 条 typed 图谱支持项。</p>
 <p>当前报告页面没有专门的 PDF 导出按钮。本手册附带的中英文 PDF 是文档构建产物；需要打印诊断报告时可另用浏览器打印。</p>
@@ -229,18 +229,18 @@ npm run dev
 <figure><img src="screenshots/49-report-reasoning.png" alt="故障候选与处置建议"><figcaption>故障候选与处置建议</figcaption></figure>
 <figure><img src="screenshots/50-report-pipeline.png" alt="展开的技术细节与流水线阶段"><figcaption>展开的技术细节与流水线阶段</figcaption></figure>
 <h2>12. 设备状态监测</h2>
-<p>打开<strong>状态监测</strong>。这里的独立文件选择器将设备时序直接写入 InfluxDB。选择 Excel 工作簿并点击<strong>上传并导入时序数据</strong>。可识别的工作表名称标记为<strong>主变压器时序</strong>、<strong>GIS时序</strong>、<strong>断路器时序</strong>、<strong>主变压器运行日志</strong>。有效表需包含 <code>timestamp</code> 或 <code>log_date</code>，以及 <code>device_id</code>；manual-demo.xlsx 另含 <code>top_oil_temp_c</code>、<code>load_mw</code>。</p>
+<p>打开<strong>状态监测</strong>。这里的独立文件选择器将设备时序直接写入 InfluxDB。选择 Excel 工作簿并点击<strong>上传并导入时序数据</strong>。可识别的工作表名称标记为<strong>主变压器时序</strong>、<strong>GIS时序</strong>、<strong>断路器时序</strong>、<strong>主变压器运行日志</strong>。有效表需包含 <code>timestamp</code> 或 <code>log_date</code>，以及 <code>device_id</code>；<a href="samples/monitoring-demo.xlsx">monitoring-demo.xlsx</a> 提供两台设备共 24 条合成记录，包含 <code>top_oil_temp_c</code> 和 <code>load_mw</code>。</p>
 <p>在<strong>单台设备多指标</strong>模式中选择数据类型和设备，通过指标标签控制曲线，选择<strong>归一化对比/原值对比</strong>。归一化适合比较变化形态，原值和单位应结合结果表读取。<strong>单指标多设备</strong>模式选择指标并切换设备标签。<strong>刷新</strong>重新执行当前查询，下方表格显示返回数据。</p>
-<p><strong>录制时的问题与所需配置：</strong> 本页依赖 InfluxDB OSS v2；当时 <code>127.0.0.1:8086</code> 没有服务监听，因此显示连接拒绝。启动 InfluxDB v2，创建组织与 bucket，在 <code>.env</code> 中设置 <code>INFLUXDB_URL</code>、<code>INFLUXDB_ORG</code>、<code>INFLUXDB_BUCKET</code>、<code>INFLUXDB_TOKEN</code>，重启 Flask，并在导入示例工作簿前检查 <code>/api/timeseries/ping</code>。录制中没有成功写入时序或展示有数据的曲线。导入器实际调用 <code>pandas.read_excel</code>，因此应使用 Excel 文件；旧版 <code>.xls</code> 还需读取引擎。</p>
-<p>导入器会先删除同一 measurement 中、输入工作表日期区间至下一天的已有点，再写入新行，可能覆盖该区间其他设备的记录。本次工作簿仅导入知识库，未写入生产时序 bucket。</p>
-<figure><img src="screenshots/20-timeseries.png" alt="状态监测与实际服务错误"><figcaption>状态监测与实际服务错误</figcaption></figure>
+<p><strong>配置与结果：</strong> 启动 InfluxDB OSS v2，在 <code>.env</code> 中配置 <code>INFLUXDB_URL</code>、<code>INFLUXDB_ORG</code>、<code>INFLUXDB_BUCKET</code> 和 <code>INFLUXDB_TOKEN</code>，再重启 Flask。独立演示实例使用 <code>8087</code> 端口；<code>/api/timeseries/ping</code> 与 <code>/api/timeseries/overview</code> 均返回 HTTP 200。上传 <code>monitoring-demo.xlsx</code> 向演示 bucket 写入两台设备共 24 个点，两种图表模式均显示曲线。CSV 文件名需含可识别的测量类型标记；<code>.xls</code> 使用 <code>xlrd</code>。</p>
+<p>重复导入时，导入器只替换输入 measurement 和设备在对应日期区间内的数据。独立演示 bucket 与生产时序数据库分开。</p>
+<figure><img src="screenshots/20-timeseries.png" alt="有数据的状态监测曲线"><figcaption>有数据的状态监测曲线</figcaption></figure>
 <figure><img src="screenshots/21-timeseries-compare.png" alt="单指标多设备模式"><figcaption>单指标多设备模式</figcaption></figure>
 <h2>13. 账号与平台管理</h2>
 <p><code>App.vue</code> 顶部<strong>登录 / 注册</strong>按钮没有绑定点击处理。<strong>设置 → 用户管理</strong>跳转 <code>/manage</code>；该页显示权限角色、运行监控、系统配置及审计日志卡片，<strong>进入管理台</strong>也未绑定操作。<strong>退出</strong>只返回首页，不调用后端登出接口。这些可见控件不构成已完成的账号管理流程。</p>
 <p>后端已实现邮箱验证码合并注册/登录：<strong>发送验证码 → 验证 → 保存会话令牌 → 刷新 → 登出</strong>，接口为 <code>/api/auth/send-code</code>、<code>/verify-code</code>、<code>/refresh</code>、<code>/logout</code>。首次验证可创建用户，服务依赖 SMTP、认证配置及本地 SQLite 存储。请求与返回字段见 auth_api_quickstart.md。本次未发送邮件，也未创建真实账号。</p>
 <figure><img src="screenshots/22-management.png" alt="当前的平台管理入口"><figcaption>当前的平台管理入口</figcaption></figure>
 <h2>14. 录屏与视频截帧</h2>
-<p>以下均为实际浏览器无声录屏，鼠标在每次操作前沿连续路径平滑移动，点击处显示光圈，按正常速度播放，同时保留真实等待和失败状态。MP4 链接兼容性较好，Markdown 是否内嵌播放取决于阅读器。PDF 保留静态画面及视频链接，不内嵌可播放视频；使用时请保留同目录 <code>videos/</code> 文件夹。</p>
+<p>以下均为实际浏览器无声录屏，鼠标在每次操作前沿连续路径平滑移动，点击处显示光圈，按正常速度播放，同时保留真实等待状态。MP4 链接兼容性较好，Markdown 是否内嵌播放取决于阅读器。PDF 保留静态画面及视频链接，不内嵌可播放视频；使用时请保留同目录 <code>videos/</code> 文件夹。</p>
 <table>
 <thead>
 <tr>
@@ -250,7 +250,7 @@ npm run dev
 </thead>
 <tbody><tr>
 <td>界面全览 — MP4</td>
-<td>首页、主题、设置、导入、PDF/抽取/切分块、图谱搜索、新问答失败、完成诊断与报告、监测及管理</td>
+<td>首页、主题、设置、导入、PDF/抽取/切分块、图谱搜索、新问答回答、完成诊断与报告、有数据的监测及管理</td>
 </tr>
 <tr>
 <td>导入与资料库 — MP4</td>
@@ -750,7 +750,7 @@ venv/bin/python scripts/eval_kg_extraction.py
 <td>检查 Neo4j URI 和凭据；备份数据库后使用 <code>/api/graph/rebuild</code> 从已有文本块构建图谱内容。</td>
 </tr>
 <tr>
-<td>监测连接 8086 失败</td>
+<td>监测连接失败</td>
 <td>启动 InfluxDB OSS v2，在 <code>.env</code> 中设置 URL/org/bucket/token，重启 Flask、检查 <code>/api/timeseries/ping</code> 后导入规定格式的 Excel。</td>
 </tr>
 <tr>
