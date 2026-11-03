@@ -162,7 +162,7 @@ npm run dev
 <li>点击<strong>编辑</strong>，修改 Markdown，再点击<strong>保存</strong>。演示修改中明确注明数据为合成数据。</li>
 <li>点击<strong>保存并入库</strong>，在数据集中重新打开工作簿，并确认<strong>抽取结果</strong>保留编辑稿。</li>
 </ol>
-<p><strong>实际结果：</strong> 源表可正常查看，提交后保留了编辑后的 Markdown。本环境未验证增量检索入库成功形成新的可搜索索引。知识库中的 Excel 导入与<strong>状态监测</strong>写入 InfluxDB 是两条不同流程。</p>
+<p><strong>实际结果：</strong> 源表可正常查看，提交后保留了编辑后的 Markdown。新增文档若需本地编码，可设置 <code>EMBEDDING_DOCUMENT_MODEL=voyageai/voyage-4-nano</code>。另在隔离副本中向已有 5,719 向量的 Voyage 4 索引增量加入一份测试文档，形成 5,720 个向量，相关查询将新文档排在首位。本次索引验证没有重跑录屏中的工作簿上传。知识库导入与<strong>状态监测</strong>写入 InfluxDB 是两条不同流程。</p>
 <figure><img src="screenshots/24-upload-processed.png" alt="实际的工作表抽取"><figcaption>实际的工作表抽取</figcaption></figure>
 <figure><img src="screenshots/25-markdown-edit.png" alt="编辑抽取草稿"><figcaption>编辑抽取草稿</figcaption></figure>
 <figure><img src="screenshots/26-markdown-saved.png" alt="提交入库前保存草稿"><figcaption>提交入库前保存草稿</figcaption></figure>
@@ -192,7 +192,7 @@ npm run dev
 <li><code>POST /api/vector/search</code>：提供 <code>query</code>，可选 <code>top_k</code>（1–100）、<code>category</code>、<code>doc_id</code>；返回分数、文本及可用页码、条款和行号。</li>
 </ul>
 <p>检索读取 FAISS 内积索引，对问题向量化，召回候选，再按文档、分类过滤并排除已删除资料。维度不匹配时返回 HTTP 409 并触发重建任务。索引缺失或嵌入模型不可用时，需先解决相应问题。</p>
-<p><strong>索引兼容性与结果：</strong> 已有 1,024 维 Voyage 4 索引可使用本地 <code>voyageai/voyage-4-nano</code> 查询向量：设置 <code>EMBEDDING_QUERY_MODEL=voyageai/voyage-4-nano</code>，无需重建索引。首次下载设置 <code>LOCAL_EMBEDDING_LOCAL_ONLY=0</code>，离线使用时改为 <code>1</code>。实测检索返回 HTTP 200 和三条命中。</p>
+<p><strong>索引兼容性与结果：</strong> 已有 1,024 维 Voyage 4 索引可使用本地 <code>voyageai/voyage-4-nano</code> 查询向量：设置 <code>EMBEDDING_QUERY_MODEL=voyageai/voyage-4-nano</code>，无需重建索引。设置 <code>EMBEDDING_DOCUMENT_MODEL=voyageai/voyage-4-nano</code> 可在本地编码新增文档。首次下载设置 <code>LOCAL_EMBEDDING_LOCAL_ONLY=0</code>，离线使用时改为 <code>1</code>。实测检索返回 HTTP 200 和三条命中；隔离副本的增量验证将向量数从 5,719 增至 5,720。</p>
 <p>维护接口包括 <code>POST /api/kb/build</code>（综合构建）、<code>/api/vector/rebuild</code>（仅向量）、<code>/api/graph/rebuild</code>（仅图谱）。使用 <code>GET /api/kb/build/&lt;task_id&gt;</code> 查询阶段、日志和结果。返回任务 ID 只表示已接受，不表示完成。本次未主动重建已有索引。</p>
 <h2>8. 知识图谱</h2>
 <p>打开<strong>知识图谱</strong>，在<strong>统一检索</strong>输入设备、指标、故障或标准，点击<strong>搜索</strong>或回车。页面请求局部图谱与证据链；建议项和主题标签用于定位实体。选中节点后可检查或聚焦，支持拖动、缩放及 <strong>+</strong>、<strong>−</strong>、<strong>适配</strong>。<strong>刷新图谱</strong>重新加载；<strong>图谱大屏展示/回到总览</strong>重置筛选。</p>
