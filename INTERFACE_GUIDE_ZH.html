@@ -739,6 +739,33 @@ venv/bin/python scripts/eval_kg_extraction.py
 </tr>
 </tbody></table>
 <p>这些维护与评估命令依据源码说明，未为本手册重新运行并冒充新实验结果。名称含 <code> 2</code> 后缀的文件是重复源码，不是额外注册的产品功能。</p>
+<h2>附录：完全本地运行</h2>
+<p>本手册记录的不可用状态（Neo4j 返回 503、InfluxDB 连接拒绝、问答出现 Hugging Face 缓存错误）均可通过在本地运行依赖服务解决：</p>
+<p><strong>Neo4j。</strong> 运行本地容器，并在 <code>.env</code> 中配置 <code>NEO4J_URI</code>/<code>NEO4J_USER</code>/<code>NEO4J_PASSWORD</code> 指向它：</p>
+<pre><code class="language-bash">docker run -d --name neo4j -p 7474:7474 -p 7687:7687 neo4j:latest
+</code></pre>
+<p><strong>InfluxDB。</strong> 在 8086 端口运行本地 InfluxDB 2.x 容器，org/bucket/token 需与后端一致（见 <code>core/timeseries/service.py</code>；默认 org 为 <code>knowledge-base</code>，bucket 为 <code>predictive_maintenance</code>）：</p>
+<pre><code class="language-bash">docker run -d --name influxdb -p 8086:8086 \
+  -e DOCKER_INFLUXDB_INIT_MODE=setup \
+  -e DOCKER_INFLUXDB_INIT_USERNAME=admin \
+  -e DOCKER_INFLUXDB_INIT_PASSWORD=password123 \
+  -e DOCKER_INFLUXDB_INIT_ORG=knowledge-base \
+  -e DOCKER_INFLUXDB_INIT_BUCKET=predictive_maintenance \
+  -e DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=&lt;与 .env 中 INFLUXDB_TOKEN 一致的令牌&gt; \
+  influxdb:2
+</code></pre>
+<p>可用 <code>curl http://127.0.0.1:8086/health</code> 及后端 <code>GET /api/timeseries/ping</code> 验证，后者应返回 <code>&quot;ok&quot;: true</code>。</p>
+<p><strong>嵌入模型。</strong> 本地嵌入路径（<code>EMBEDDING_BACKEND=local</code>）使用 sentence-transformers 模型。联网预下载一次后即可完全离线运行（<code>LOCAL_EMBEDDING_LOCAL_ONLY=1</code> 已是默认值）：</p>
+<pre><code class="language-bash">venv/bin/python -c &quot;from sentence_transformers import SentenceTransformer; SentenceTransformer(&#39;Qwen/Qwen3-Embedding-0.6B&#39;, device=&#39;cpu&#39;)&quot;
+</code></pre>
+<p>若无法访问 huggingface.co，可在命令前加 <code>HF_ENDPOINT=https://hf-mirror.com</code>。无可用 CUDA 工具链的机器请使用 <code>device=&#39;cpu&#39;</code> 或 <code>CUDA_VISIBLE_DEVICES=&quot;&quot;</code>，避免 Triton GPU 编译错误。模型必须与构建已保存 FAISS 索引所用模型一致：本手册捕获的索引由 <code>voyage-4-large</code>（1024 维）构建，因此要保证完全本地且检索一致，需将 <code>EMBEDDING_MODEL</code> 设为本地 1024 维模型并通过 <code>POST /api/vector/rebuild</code> 重建索引。仅维度相同并不代表模型可互换。</p>
+<p><strong>问答与图谱抽取所用 LLM。</strong> 答案生成与 KG 关系抽取依赖对话大模型。完全本地方案为运行 Ollama 并在 <code>.env</code> 配置：</p>
+<pre><code>LLM_PROVIDER=ollama
+LLM_MODEL=qwen2.5:7b
+LLM_BASE_URL=http://127.0.0.1:11434/v1
+LLM_API_KEY=ollama
+</code></pre>
+<p>图谱重建会逐 chunk 通过该 LLM 抽取关系；可先用 <code>KG_MAX_CHUNKS</code>（如 <code>150</code>）做小规模试建，用 <code>KG_EXTRACT_WORKERS</code> 控制并发。图谱重建会先清空再写入（<code>clean_rebuild</code>），之后的完整重建会替换试建结果，不会产生重复数据。</p>
 <table>
 <thead>
 <tr>

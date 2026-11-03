@@ -739,6 +739,33 @@ venv/bin/python scripts/eval_kg_extraction.py
 </tr>
 </tbody></table>
 <p>These maintenance/evaluation commands were documented from source, not rerun to imply fresh experimental results. Files with a <code> 2</code> suffix are duplicate source artifacts, not additional registered product features.</p>
+<h2>Appendix: Running fully local</h2>
+<p>The unavailability states captured in this manual (Neo4j 503, InfluxDB connection refused, Hugging Face cache error in Q&amp;A) are all resolved by running the backing services locally:</p>
+<p><strong>Neo4j.</strong> Run a local container and point <code>NEO4J_URI</code>/<code>NEO4J_USER</code>/<code>NEO4J_PASSWORD</code> in <code>.env</code> at it:</p>
+<pre><code class="language-bash">docker run -d --name neo4j -p 7474:7474 -p 7687:7687 neo4j:latest
+</code></pre>
+<p><strong>InfluxDB.</strong> Run a local InfluxDB 2.x container on port 8086 with the org/bucket/token the backend expects (<code>core/timeseries/service.py</code>; defaults org <code>knowledge-base</code>, bucket <code>predictive_maintenance</code>):</p>
+<pre><code class="language-bash">docker run -d --name influxdb -p 8086:8086 \
+  -e DOCKER_INFLUXDB_INIT_MODE=setup \
+  -e DOCKER_INFLUXDB_INIT_USERNAME=admin \
+  -e DOCKER_INFLUXDB_INIT_PASSWORD=password123 \
+  -e DOCKER_INFLUXDB_INIT_ORG=knowledge-base \
+  -e DOCKER_INFLUXDB_INIT_BUCKET=predictive_maintenance \
+  -e DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=&lt;token matching INFLUXDB_TOKEN in .env&gt; \
+  influxdb:2
+</code></pre>
+<p>Verify with <code>curl http://127.0.0.1:8086/health</code> and the backend&#39;s <code>GET /api/timeseries/ping</code>, which should return <code>&quot;ok&quot;: true</code>.</p>
+<p><strong>Embedding model.</strong> The local embedding path (<code>EMBEDDING_BACKEND=local</code>) loads a sentence-transformers model. Pre-populate the Hugging Face cache once, after which the app runs fully offline (<code>LOCAL_EMBEDDING_LOCAL_ONLY=1</code> is already the default):</p>
+<pre><code class="language-bash">venv/bin/python -c &quot;from sentence_transformers import SentenceTransformer; SentenceTransformer(&#39;Qwen/Qwen3-Embedding-0.6B&#39;, device=&#39;cpu&#39;)&quot;
+</code></pre>
+<p>If huggingface.co is unreachable, prefix the command with <code>HF_ENDPOINT=https://hf-mirror.com</code>. On machines without a working CUDA toolchain, load with <code>device=&#39;cpu&#39;</code> or <code>CUDA_VISIBLE_DEVICES=&quot;&quot;</code> to avoid Triton GPU compile errors. The model must match the one used to build the saved FAISS index: the index captured here was built with <code>voyage-4-large</code> (1,024 dimensions), so for consistent fully-local retrieval set <code>EMBEDDING_MODEL</code> to a local 1,024-dimensional model and rebuild via <code>POST /api/vector/rebuild</code>. Dimensions matching alone does not make models interchangeable.</p>
+<p><strong>LLM for Q&amp;A and graph extraction.</strong> Answer generation and KG relation extraction call a chat LLM. For a fully local setup, run Ollama and configure <code>.env</code>:</p>
+<pre><code>LLM_PROVIDER=ollama
+LLM_MODEL=qwen2.5:7b
+LLM_BASE_URL=http://127.0.0.1:11434/v1
+LLM_API_KEY=ollama
+</code></pre>
+<p>Graph rebuilds extract relations per chunk through this LLM; use <code>KG_MAX_CHUNKS</code> (e.g. <code>150</code>) for a quick smoke-test build before a full rebuild, and <code>KG_EXTRACT_WORKERS</code> to control concurrency. Graph rebuilds wipe and rewrite the graph (<code>clean_rebuild</code>), so a later full rebuild replaces a capped one without duplication.</p>
 <table>
 <thead>
 <tr>
