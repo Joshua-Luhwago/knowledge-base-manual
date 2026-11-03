@@ -1,9 +1,9 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Knowledge Base — Operating Manual</title><style>
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Knowledge Base — Operating Manual</title><style>
 @page {size:A4;margin:16mm 14mm 18mm}*{box-sizing:border-box}body{font:10pt/1.55 'Noto Sans CJK SC','Noto Sans',sans-serif;color:#182735;margin:0 auto;max-width:1000px;padding:28px}h1{font-size:26pt;line-height:1.3;color:#103e57;border-bottom:4px solid #1b8e9a;padding-bottom:16px}h2{font-size:17pt;color:#103e57;margin-top:32px;border-bottom:1px solid #c9dce2;padding-bottom:8px}h3{font-size:12pt;color:#175b70}p{margin:10px 0}a{color:#08788c;text-decoration:none;overflow-wrap:anywhere}code{font:8.5pt/1.4 'Noto Sans Mono CJK SC',monospace;overflow-wrap:anywhere}pre{background:#f0f5f8;border-left:3px solid #20909d;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:8pt;table-layout:auto;margin:16px 0}th{background:#dcecf1;text-align:left;color:#113f55}td,th{padding:6px;border:1px solid #cbdbe2;vertical-align:top;overflow-wrap:anywhere}tr:nth-child(even){background:#f5f8fa}figure{margin:18px 0 24px;break-inside:avoid}figure img{display:block;width:100%;height:auto;border:1px solid #c9dce2;border-radius:4px}figcaption{font-size:8.5pt;color:#566a78;margin-top:6px}img{max-width:100%}li{margin:4px 0}thead{display:table-header-group}tr{break-inside:avoid}h1,h2,h3{break-after:avoid} @media print{body{padding:0;max-width:none}h2{break-before:page;margin-top:0}a{color:#11677a}figure img{max-height:145mm;object-fit:contain}pre{break-inside:avoid}}
 </style><body><h1>Multimodal Knowledge Base — operating manual and visual demonstration</h1>
-<p><strong>English edition · 3 November 2026 · Local repository snapshot</strong></p>
+<p><strong>English edition · 4 November 2026 · Local repository snapshot</strong></p>
 <p>This guide follows the reference interface manual, with additional completed workflows, recorded browser demonstrations, API coverage and reproducible inputs. On-screen labels remain Chinese so that English readers can find the controls.</p>
-<p><strong>Evidence scope:</strong> The refreshed screenshots and interface tour were captured from this repository at <code>http://127.0.0.1:5176</code>, with Flask on <code>5004</code> and an isolated Neo4j database on Bolt port <code>7688</code>. The import and library recordings use the same repository with Flask on <code>5002</code>. The monitoring capture uses an isolated InfluxDB instance on <code>8087</code>. Automatic vector rebuilding was disabled (<code>DISABLE_KB_BOOTSTRAP=1</code>). The saved index summary records 138 documents and 5,719 chunks; visible file counts may differ after demonstration uploads.</p>
+<p><strong>Evidence scope:</strong> The refreshed screenshots and interface tour were captured from this repository at <code>http://127.0.0.1:5176</code>, with Flask on <code>5004</code> and the populated Neo4j graph on Bolt port <code>7688</code>. Graph browsing and search were read-only. The import and library recordings use the same repository with Flask on <code>5002</code>. The monitoring capture uses an isolated InfluxDB instance on <code>8087</code>. Automatic vector rebuilding was disabled (<code>DISABLE_KB_BOOTSTRAP=1</code>). The saved index summary records 138 documents and 5,719 chunks; visible file counts may differ after demonstration uploads.</p>
 <p>Confidence is <strong>high</strong> for the captured graph, fresh Q&amp;A, diagnosis and monitoring workflows. All demonstration measurements are synthetic.</p>
 <h2>Contents</h2>
 <ol>
@@ -154,7 +154,7 @@ npm run dev
 <figure><img src="screenshots/09-chunks.png" alt="Empty chunk state for one existing document"><figcaption>Empty chunk state for one existing document</figcaption></figure>
 <figure><img src="screenshots/51-populated-chunks.png" alt="Populated chunk list from another existing document"><figcaption>Populated chunk list from another existing document</figcaption></figure>
 <h2>5. Completed spreadsheet import and editing</h2>
-<p>Reproduce with manual-demo.xlsx. The sheet <strong>主变压器时序</strong> contains two synthetic readings for <code>MANUAL-DEMO-001</code>: 72/76°C and 42/46 MW, at 08:00/09:00 on 1 November 2026 (+08:00).</p>
+<p>Reproduce with <a href="samples/manual-demo.xlsx">manual-demo.xlsx</a>. The sheet <strong>主变压器时序</strong> contains two synthetic readings for <code>MANUAL-DEMO-001</code>: 72/76°C and 42/46 MW, at 08:00/09:00 on 1 November 2026 (+08:00).</p>
 <ol>
 <li>Upload the workbook and name it <code>Manual demo — synthetic transformer readings</code>.</li>
 <li>Wait for <strong>表格解析</strong> and <strong>文本清洗</strong> to complete. The observed engine was <code>openpyxl+pandas</code>.</li>
@@ -197,13 +197,14 @@ npm run dev
 <h2>8. Knowledge graph</h2>
 <p>Open <strong>知识图谱</strong>. Enter equipment, a metric, a fault or standard in <strong>统一检索</strong>, then click <strong>搜索</strong> or press Enter. The page requests a subgraph and evidence chains. Suggestions and topic chips focus matching entities. Select a node to inspect/focus it; drag/zoom the D3 network and use <strong>+</strong>, <strong>−</strong>, <strong>适配</strong>. <strong>刷新图谱</strong> reloads; <strong>图谱大屏展示/回到总览</strong> reset filters.</p>
 <p>The visible workspace includes node/edge counts, typed-node counts, current zoom, search results and evidence-chain summaries. Backend entity lookup supports name/type and query limits; chain lookup supports seed limit, chain limit and one/two hops. Typed extraction includes <code>StandardClause</code>, <code>FaultMode</code>, <code>InspectionTask</code>, <code>MaintenanceAction</code>, <code>ThresholdRule</code>, with relationships linking evidence, faults, inspections and actions.</p>
-<p><strong>Graph setup and result:</strong> Set <code>NEO4J_URI</code>, <code>NEO4J_USER</code>, and <code>NEO4J_PASSWORD</code> for a running Neo4j instance, then restart Flask. The graph demonstration uses an isolated database built from the saved vector chunks with <code>KG_EXTRACT_MODE=rule</code> and <code>POST /api/graph/rebuild</code>. Back up an existing database before this clean rebuild; follow progress at <code>GET /api/kb/build/&lt;task_id&gt;</code>. In the captured run, <code>/api/graph/overview</code> returned HTTP 200, and graph search returned a populated network and evidence chains.</p>
-<figure><img src="screenshots/11-graph.png" alt="Graph workspace with populated Neo4j network"><figcaption>Graph workspace with populated Neo4j network</figcaption></figure>
-<figure><img src="screenshots/12-graph-search.png" alt="Keyword search and evidence-chain area"><figcaption>Keyword search and evidence-chain area</figcaption></figure>
+<p><strong>Graph setup and result:</strong> Set <code>NEO4J_URI</code>, <code>NEO4J_USER</code>, and <code>NEO4J_PASSWORD</code> for a running Neo4j instance, then restart Flask. The connected graph contains 380 nodes and 1,314 relationships. <code>/api/graph/overview</code> returned HTTP 200; the interface displayed its global metrics, a focused network, entity details and evidence chains. Searching <code>变压器</code> returned ten chains. If constructing a graph from saved vector chunks, use <code>KG_EXTRACT_MODE=rule</code> and <code>POST /api/graph/rebuild</code> against a backed-up or isolated database, and follow progress at <code>GET /api/kb/build/&lt;task_id&gt;</code>.</p>
+<figure><img src="screenshots/11-graph.png" alt="Populated graph and selected entity"><figcaption>Populated graph and selected entity</figcaption></figure>
+<figure><img src="screenshots/12-graph-search.png" alt="Graph search with evidence chains"><figcaption>Graph search with evidence chains</figcaption></figure>
+<figure><img src="screenshots/12b-graph-evidence.png" alt="Evidence-chain results and entity details"><figcaption>Evidence-chain results and entity details</figcaption></figure>
 <h2>9. Evidence-based questions</h2>
 <p>Open <strong>知识问答</strong>. Choose a suggested category/question or type a question. <strong>Enter</strong> sends; <strong>Ctrl+Enter</strong> inserts a line break. The send button is disabled during execution. <strong>新建对话</strong> starts a fresh conversation; selecting history reopens a saved answer. The history context menu supports deletion of a saved question.</p>
 <p>Answers can include inline <strong>【1】</strong> citations, source-document links and a right-hand <strong>引用文本块</strong> panel with up to five evidence excerpts. <strong>查看文档</strong> opens the associated dataset source; <strong>复制</strong> copies the excerpt. Inspect page, clause, section and line metadata where present. These fields describe available source provenance, not a guarantee that each old record has a resolvable PDF.</p>
-<p><strong>Configuration and result:</strong> With <code>EMBEDDING_QUERY_MODEL=voyageai/voyage-4-nano</code>, the saved Voyage 4 index accepts a local 1,024-dimensional query vector. Configure a working answer model such as local Ollama <code>qwen2.5:7b</code>. The captured fresh DGA question returned HTTP 200, an answer with inline citations and eight evidence chunks. The other answer screenshots show saved history.</p>
+<p><strong>Configuration and result:</strong> With <code>EMBEDDING_QUERY_MODEL=voyageai/voyage-4-nano</code>, the saved Voyage 4 index accepts a local 1,024-dimensional query vector. Configure a working answer model such as local Ollama <code>qwen2.5:7b</code>. The captured DGA question returned an answer with inline citations, document links and a populated evidence panel. The other answer screenshots show saved history.</p>
 <figure><img src="screenshots/13-qa.png" alt="Question workspace and history"><figcaption>Question workspace and history</figcaption></figure>
 <figure><img src="screenshots/14-qa-answer.png" alt="Fresh answer with inline citations"><figcaption>Fresh answer with inline citations</figcaption></figure>
 <figure><img src="screenshots/34-qa-history.png" alt="Previously saved answer with inline citations"><figcaption>Previously saved answer with inline citations</figcaption></figure>
@@ -213,15 +214,15 @@ npm run dev
 <p>Structured fields include equipment ID/name/type, station, component, model and voltage; observed phenomena and one-item-per-line symptoms/signals; measurement ID/name/key, value, unit, timestamp and source. Add measurements with <strong>+ 添加测量</strong>, or <strong>移除</strong> an extra row. Enter attention/warning/alarm thresholds and select <strong>数值越高越危险</strong> or <strong>数值越低越危险</strong>. History accepts one <code>timestamp,value</code> pair per line. Advanced configuration exposes case ID, retrieval <code>top_k</code> and debug output.</p>
 <p><strong>Reproduce the completed demo:</strong> click <strong>加载示例</strong>, inspect its two measurements, then <strong>运行诊断</strong>. The built-in example uses hybrid input. It supplies top-oil temperature 95°C (thresholds 85/90/95) and load rate 87% (80/85/95). The actual output classified them as <strong>alarm</strong> and <strong>warning</strong>, respectively, and overall risk as <strong>Critical</strong>. A persistent report was generated.</p>
 <p>Read the result&#39;s anomaly summary, fault candidates, checks, maintenance actions, applicability, contradictions, missing evidence and rule hits. Upper/lower threshold direction changes the comparison; a missing threshold is not an automatic normal finding. Evidence-enriched thresholds and discrepancies are displayed when available.</p>
-<p><strong>Interpretation of this run:</strong> The synthetic example returned six vector evidence chunks (<code>evidence_count=6</code>) and 18 typed graph candidates. The saved report includes two input observations, 20 typed graph support items, six standard-clause items and one vector evidence item. The 85/90/95 thresholds were example inputs, not newly retrieved standard limits; the candidates are suggestions rather than confirmed diagnoses.</p>
+<p><strong>Interpretation of this run:</strong> The synthetic example returned six vector evidence chunks (<code>evidence_count=6</code>). Its oil-temperature topic did not match a typed graph candidate in the connected graph (<code>candidate_count=0</code>), so the diagnosis used the input measurements, retrieved text and rule guidance. The saved report contains two measurement facts, 12 standard-clause excerpts and one vector threshold reference. The 85/90/95 thresholds were example inputs, not newly retrieved standard limits; fault candidates are suggestions rather than confirmed diagnoses.</p>
 <figure><img src="screenshots/36-natural-language.png" alt="Natural-language input"><figcaption>Natural-language input</figcaption></figure>
 <figure><img src="screenshots/37-structured.png" alt="Structured anomaly form"><figcaption>Structured anomaly form</figcaption></figure>
 <figure><img src="screenshots/16-diagnosis-example.png" alt="Loaded hybrid example"><figcaption>Loaded hybrid example</figcaption></figure>
 <figure><img src="screenshots/17-diagnosis-result.png" alt="Actual completed diagnosis and report link"><figcaption>Actual completed diagnosis and report link</figcaption></figure>
 <h2>11. Saved reports and source evidence</h2>
-<p>Click <strong>查看完整报告</strong> after a successful run. The saved-report route requires a real report ID; this session generated <code>rpt-1793689314-0fd6a86d</code>. The report presents input facts and normalized measurements, thresholds/rules, candidates, inspections/actions, and supporting evidence/technical details. Expand <strong>四、附加追踪与技术细节</strong> to inspect pipeline and enrichment notes. Scroll through the full report; the screenshots show its beginning and lower sections.</p>
+<p>Click <strong>查看完整报告</strong> after a successful run. The saved-report route uses the report ID returned by that run. The report presents input facts and normalized measurements, thresholds/rules, candidates, inspections/actions, and supporting evidence/technical details. Expand <strong>四、附加追踪与技术细节</strong> to inspect pipeline and enrichment notes. Scroll through the full report; the screenshots show its beginning and lower sections.</p>
 <p>Reports are persisted as local JSON under <code>uploads/reports/</code>. List them with <code>GET /api/reports</code>, load one with <code>GET /api/reports/&lt;report_id&gt;</code>, or rebuild a report from an available run using <code>POST /api/reports/from-run/&lt;run_id&gt;</code>. Run detail is held in process memory, while saved report files survive restart. Keep the report ID to reopen the document.</p>
-<p>Evidence buttons open a resolved PDF reference or the dataset document when source metadata is available. <code>/api/references/pdf/&lt;token&gt;</code> requires a registered token. This report lists two input observations (SCADA/EMS) and 21 typed graph support items.</p>
+<p>Evidence buttons open a resolved PDF reference or the dataset document when source metadata is available. <code>/api/references/pdf/&lt;token&gt;</code> requires a registered token. This report lists two measurement facts, 12 standard-clause excerpts and one vector threshold reference.</p>
 <p>The application has no dedicated report PDF-export button in this view. The Chinese/English PDFs accompanying this manual are generated documentation. Use browser printing separately if a diagnosis report must be printed.</p>
 <figure><img src="screenshots/18-report.png" alt="Saved report header and measured facts"><figcaption>Saved report header and measured facts</figcaption></figure>
 <figure><img src="screenshots/19-report-evidence.png" alt="Rule-based reasoning and recommendations"><figcaption>Rule-based reasoning and recommendations</figcaption></figure>
@@ -233,11 +234,13 @@ npm run dev
 <p>For <strong>单台设备多指标</strong>, select data type and device, toggle metric chips and choose <strong>归一化对比/原值对比</strong>. Normalization supports shape comparison; read the result table for original values/units. For <strong>单指标多设备</strong>, choose a metric and toggle device chips. <strong>刷新</strong> reruns the current selection; the lower query table shows returned data.</p>
 <p><strong>Configuration and result:</strong> Start InfluxDB OSS v2 and set <code>INFLUXDB_URL</code>, <code>INFLUXDB_ORG</code>, <code>INFLUXDB_BUCKET</code> and <code>INFLUXDB_TOKEN</code> in <code>.env</code>, then restart Flask. The isolated demo uses port <code>8087</code>; <code>/api/timeseries/ping</code> and <code>/api/timeseries/overview</code> returned HTTP 200. Uploading <code>monitoring-demo.xlsx</code> wrote 24 points for two devices to its demo bucket, and both chart modes displayed populated series. CSV files are supported when their filename contains a recognized measurement marker; <code>.xls</code> uses <code>xlrd</code>.</p>
 <p>On repeat import, the importer replaces points only for each incoming measurement and device within its date interval. The isolated demo bucket is separate from any production time-series database.</p>
-<figure><img src="screenshots/20-timeseries.png" alt="Populated condition monitoring chart"><figcaption>Populated condition monitoring chart</figcaption></figure>
-<figure><img src="screenshots/21-timeseries-compare.png" alt="Single-metric multi-device mode"><figcaption>Single-metric multi-device mode</figcaption></figure>
+<figure><img src="screenshots/20-timeseries.png" alt="Condition monitoring controls"><figcaption>Condition monitoring controls</figcaption></figure>
+<figure><img src="screenshots/20a-timeseries-chart.png" alt="Complete multi-metric chart and data table"><figcaption>Complete multi-metric chart and data table</figcaption></figure>
+<figure><img src="screenshots/21-timeseries-compare.png" alt="Single-metric multi-device controls"><figcaption>Single-metric multi-device controls</figcaption></figure>
+<figure><img src="screenshots/21a-timeseries-compare-chart.png" alt="Complete multi-device comparison chart"><figcaption>Complete multi-device comparison chart</figcaption></figure>
 <h2>13. Accounts and management</h2>
 <p>The top <strong>登录 / 注册</strong> button has no bound click handler in <code>App.vue</code>. <strong>设置 → 用户管理</strong> navigates to <code>/manage</code>. That page displays permissions, monitoring, configuration and audit cards; <strong>进入管理台</strong> has no bound action. <strong>退出</strong> returns home without calling the authentication logout endpoint. These visible controls are not a completed account-management workflow.</p>
-<p>The backend does implement combined email-code registration/login: <strong>send code → verify code → store issued session tokens → refresh → logout</strong>. Its routes are <code>/api/auth/send-code</code>, <code>/verify-code</code>, <code>/refresh</code>, <code>/logout</code>. Verification creates the user when necessary. SMTP, authentication settings and the local SQLite store support this service. See auth_api_quickstart.md for request/response fields. No email was sent and no real account was created for this manual.</p>
+<p>The backend does implement combined email-code registration/login: <strong>send code → verify code → store issued session tokens → refresh → logout</strong>. Its routes are <code>/api/auth/send-code</code>, <code>/verify-code</code>, <code>/refresh</code>, <code>/logout</code>. Verification creates the user when necessary. SMTP, authentication settings and the local SQLite store support this service. See <a href="../auth_api_quickstart.md">auth_api_quickstart.md</a> for request/response fields. No email was sent and no real account was created for this manual.</p>
 <figure><img src="screenshots/22-management.png" alt="Current management entry page"><figcaption>Current management entry page</figcaption></figure>
 <h2>14. Recordings and screen grabs</h2>
 <p>The following are actual, silent browser recordings. They move the cursor smoothly along a timed path before each interaction, mark clicks with a pulse, and play at normal speed. Actual waiting states remain visible. MP4 links are broadly compatible; Markdown video embedding depends on the viewer. PDFs show still images and retain video links, not playable embedded video. Keep the <code>videos/</code> folder beside the guides.</p>
@@ -249,29 +252,35 @@ npm run dev
 </tr>
 </thead>
 <tbody><tr>
-<td>Interface tour — MP4</td>
+<td><a href="videos/interface-tour.mp4">Interface tour — MP4</a></td>
 <td>Home/theme/settings; import; dataset PDF/extraction/chunks; graph search; fresh Q&amp;A answer; completed diagnosis/report; populated monitoring and management</td>
 </tr>
 <tr>
-<td>Import and library — MP4</td>
+<td><a href="videos/import-and-library.mp4">Import and library — MP4</a></td>
 <td>Real spreadsheet upload, extraction, draft editing, commit and image preview</td>
 </tr>
 <tr>
-<td>Saved evidence — MP4</td>
+<td><a href="videos/evidence-and-media.mp4">Saved evidence — MP4</a></td>
 <td>Historical answer/citations, diagnosis modes, report evidence, workbook source and edited extraction</td>
 </tr>
 <tr>
-<td>Report details — MP4</td>
+<td><a href="videos/report-details.mp4">Report details — MP4</a></td>
 <td>Scroll through reasoning/actions and expand technical pipeline stages</td>
 </tr>
 <tr>
-<td>Library actions — MP4</td>
+<td><a href="videos/library-actions.mp4">Library actions — MP4</a></td>
 <td>Search, rename, soft delete, API-assisted restore, source preview, category filtering, pagination and sidebar collapse</td>
+</tr>
+<tr>
+<td><a href="videos/monitoring-chart.mp4">Monitoring charts — MP4</a></td>
+<td>Scroll through populated multi-metric and multi-device charts</td>
 </tr>
 </tbody></table>
 <figure><img src="videos/import-preview.gif" alt="Animated import screen recording"><figcaption>Animated import screen recording</figcaption></figure>
 <figure><img src="screenshots/video-grab-diagnosis.png" alt="Frame grabbed from the actual diagnosis recording"><figcaption>Frame grabbed from the actual diagnosis recording</figcaption></figure>
 <figure><img src="screenshots/video-grab-import.png" alt="Frame grabbed from the actual import recording"><figcaption>Frame grabbed from the actual import recording</figcaption></figure>
+<figure><img src="screenshots/video-grab-graph.png" alt="Frame grabbed from the populated graph recording"><figcaption>Frame grabbed from the populated graph recording</figcaption></figure>
+<figure><img src="screenshots/video-grab-monitoring.png" alt="Frame grabbed from the monitoring recording"><figcaption>Frame grabbed from the monitoring recording</figcaption></figure>
 <p>Original WebM recordings are also retained for reproducibility. The recordings demonstrate screen workflows; they are distinct from the system&#39;s video-file parsing feature.</p>
 <h2>15. API examples and endpoint catalogue</h2>
 <p>Use the backend port for direct API calls. JSON operations return structured success/error fields; inspect both HTTP status and <code>ok</code>. Uploads use multipart form data. Replace IDs/paths with actual returned values.</p>
@@ -281,7 +290,7 @@ curl -X POST http://127.0.0.1:5002/api/vector/search \
   -H &#39;Content-Type: application/json&#39; \
   -d &#39;{&quot;query&quot;:&quot;变压器油温过高&quot;,&quot;top_k&quot;:5}&#39;
 </code></pre>
-<p>The submitted hybrid request is retained as diagnosis-request.json; the actual output is diagnosis-run.json.</p>
+<p>The submitted hybrid request is retained as <a href="samples/diagnosis-request.json">diagnosis-request.json</a>; the actual output is <a href="evidence/diagnosis-run.json">diagnosis-run.json</a>.</p>
 <pre><code class="language-bash">curl -X POST http://127.0.0.1:5002/api/diagnosis/run \
   -H &#39;Content-Type: application/json&#39; \
   --data-binary @docs/manual/samples/diagnosis-request.json
@@ -686,7 +695,7 @@ curl -X POST http://127.0.0.1:5002/api/vector/search \
 <td>send-code (<code>target</code>, <code>channel</code>); verify-code (<code>target</code>, <code>channel</code>, <code>code</code>); refresh/logout with session-token fields described in the auth quickstart.</td>
 </tr>
 </tbody></table>
-<p>All exposed endpoint families are covered above. For internal implementation functions, function-inventory.csv lists Python and Vue/JavaScript declarations by source and line. It is a navigation inventory, not a claim that each helper has been individually executed.</p>
+<p>All exposed endpoint families are covered above. For internal implementation functions, <a href="evidence/function-inventory.csv">function-inventory.csv</a> lists Python and Vue/JavaScript declarations by source and line. It is a navigation inventory, not a claim that each helper has been individually executed.</p>
 <h2>16. Command-line tools and troubleshooting</h2>
 <p>Run from the repository root using the project interpreter. <code>PYTHONPATH=.</code> lets scripts import <code>core</code> reliably.</p>
 <pre><code class="language-bash">venv/bin/python main.py --input-root pdfs --output-root pdfs/markdown --clean
@@ -778,5 +787,5 @@ venv/bin/python scripts/eval_kg_extraction.py
 <td>Open the linked MP4 directly or use the HTML edition. PDF uses stills.</td>
 </tr>
 </tbody></table>
-<p>Evidence files include the route inventory, GET checks, actual diagnosis result, restoration result and visible text captured per screen. Rebuild instructions are in tools/README.md.</p>
-<section class="screen-videos"><h2>Video playback (HTML edition)</h2><p>interface-tour</p><video controls controlsList="nodownload" preload="metadata" style="width:100%" src="videos/interface-tour.mp4"></video><p>import-and-library</p><video controls controlsList="nodownload" preload="metadata" style="width:100%" src="videos/import-and-library.mp4"></video><p>evidence-and-media</p><video controls controlsList="nodownload" preload="metadata" style="width:100%" src="videos/evidence-and-media.mp4"></video><p>library-actions</p><video controls controlsList="nodownload" preload="metadata" style="width:100%" src="videos/library-actions.mp4"></video><p>report-details</p><video controls controlsList="nodownload" preload="metadata" style="width:100%" src="videos/report-details.mp4"></video></section><style>@media print{.screen-videos{display:none}}</style></body></html>
+<p>Evidence files include the route inventory, GET checks, actual diagnosis result, restoration result and visible text captured per screen. Rebuild instructions are in <a href="tools/README.md">tools/README.md</a>.</p>
+<section class="screen-videos"><h2>Video playback (HTML edition)</h2><p>interface-tour</p><video controls preload="metadata" style="width:100%" src="videos/interface-tour.mp4"></video><p>import-and-library</p><video controls preload="metadata" style="width:100%" src="videos/import-and-library.mp4"></video><p>evidence-and-media</p><video controls preload="metadata" style="width:100%" src="videos/evidence-and-media.mp4"></video><p>library-actions</p><video controls preload="metadata" style="width:100%" src="videos/library-actions.mp4"></video><p>report-details</p><video controls preload="metadata" style="width:100%" src="videos/report-details.mp4"></video></section><style>@media print{.screen-videos{display:none}}</style></body></html>
